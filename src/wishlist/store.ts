@@ -15,7 +15,6 @@ export const MAX_PICKS = 12;
 // {6,7}：目录里 0502 外国语言文学类有 8 个七位代码（0502100T 起），漏了会把有效选择静默丢掉
 const CODE_SHAPE = /^[0-9]{6,7}(TK|T|K)?$/;
 
-/** 只校验形状：去重、去非法 id、限上限 */
 export function pruneWishlist(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   const seen: string[] = [];

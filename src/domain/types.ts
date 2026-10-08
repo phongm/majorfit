@@ -73,14 +73,14 @@ export interface CatalogEntry {
   degreeNote?: string;
 }
 
-/** 霍兰德六型 */
+/** 霍兰德六型，中文标签见 RIASEC_LABELS */
 export interface RIASEC {
-  R: number; // Realistic 现实：动手、操作物理事物
-  I: number; // Investigative 研究：分析、抽象、求知
-  A: number; // Artistic 艺术：创造、表达、审美
-  S: number; // Social 社会：助人、教导、协作
-  E: number; // Enterprising 企业：说服、领导、承担风险
-  C: number; // Conventional 常规：秩序、精确、流程
+  R: number;
+  I: number;
+  A: number;
+  S: number;
+  E: number;
+  C: number;
 }
 
 export const RIASEC_LABELS: Record<keyof RIASEC, string> = {
@@ -154,7 +154,6 @@ export interface DataQuality {
   verified: boolean;
   lastReviewed: string; // YYYY-MM-DD
   confidence: 'high' | 'medium' | 'low';
-  /** 待人工核对的具体字段 */
   todo?: string[];
 }
 
@@ -296,7 +295,6 @@ export interface FilterableMajor extends ScoreableMajor {
 }
 
 export interface MajorProfile extends FilterableMajor {
-  /** 核心课程链 */
   coreCourses: string[];
   /** 挂科率/劝退感最强的那几门课，用来做真实的难度预警 */
   gatekeeperCourses: string[];
@@ -310,9 +308,7 @@ export interface MajorProfile extends FilterableMajor {
 
   /** 诚实的负面清单。空数组视为数据缺失，不是「这个专业没有缺点」 */
   honestDrawbacks: string[];
-  /** 什么样的学生在这里会如鱼得水 */
   idealFitNote: string;
-  /** 什么样的人在这里会很痛苦 */
   poorFitNote: string;
 }
 
@@ -345,14 +341,11 @@ export interface UserConstraints {
   colorVision: 'normal' | 'colorWeak' | 'colorBlind';
   /** 裸眼视力是否低于 4.8 */
   poorVision: boolean;
-  /** 能接受的最长学制；医学 5+3 这类需要显式同意 */
   /** 能接受的最长学制；null＝没答或答了「没算过」。写成可空而不是兜底 4，是为了让
    * 任何新读取点都必须先处理「没说过」，否则编译不过 */
   maxProgramYears: number | null;
-  /** 家庭能接受的学费档位上限（有序） */
   maxAnnualTuition: TuitionTier;
   postgradIntent: 'yes' | 'no' | 'undecided';
-  /** 明确排斥的学科门类 */
   excludedCategories: FieldCategory[];
 }
 
@@ -458,7 +451,6 @@ export interface ScoreBreakdown {
   interestFit: number;
   /** 负载超出耐受度造成的损失，负值 */
   loadPenalty: number;
-  /** 价值观对齐 */
   valueAlignment: number;
   /** 学历投入与深造意愿的错配，负值 */
   educationMismatch: number;
@@ -480,18 +472,14 @@ export interface Recommendation {
   breakdown: ScoreBreakdown;
   matchedPoints: string[];
   costs: string[];
-  /** 满足什么条件才建议选，不满足就别选 */
   conditionsToAccept: string[];
-  /** 出现哪些信号说明选错的可能性高 */
   disconfirmSignals: string[];
   rank: number;
 }
 
 export interface Confidence {
   level: 'high' | 'medium' | 'low';
-  /** 回答自相矛盾的维度 */
   contradictions: string[];
-  /** 信息不足以判断、值得追问的维度 */
   gaps: string[];
   note: string;
 }

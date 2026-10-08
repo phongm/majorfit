@@ -1,11 +1,8 @@
 import { useEffect, useRef, type ReactNode, type Ref } from 'react';
 
 interface Props {
-  /** 固定头部条里的内容：品牌 + 动作按钮 */
   top: ReactNode;
-  /** 固定脚部。不传就没有脚部这一条 */
   foot?: ReactNode;
-  /** 中间滚动区，切题/换搜索词时要归零用 */
   bodyRef?: Ref<HTMLDivElement>;
   children: ReactNode;
 }

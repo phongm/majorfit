@@ -125,12 +125,6 @@ export default function PickedMajors({ codes, profile, recommendations, onBrowse
   return (
     <div className="card">
       <h3>你自己挑的 {rows.length} 个专业</h3>
-      <p className="note">
-        这些没有被算进排序，也没有因为是你挑的就加分。下面用的是同一套硬约束和同一套扣分规则。
-      </p>
-      <p className="note">
-        去向里的三档说的是入口：正门＝这条路的主流入口就是这个专业；侧门＝进得去，但更多人从别的专业进来；顺路＝岗位在，但实质是转行。
-      </p>
       {missingHard.length > 0 && (
         <p className="note">
           你还有 {missingHard.length} 项硬条件没说过（选科、体检、学制这些，答「没算过」也算没说），所以「能报」是按已知的部分判的，别当成结论。

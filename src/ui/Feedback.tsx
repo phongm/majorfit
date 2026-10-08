@@ -100,9 +100,6 @@ export default function FeedbackPrompt({ hasRecommendations = true }: { hasRecom
               </span>
             </button>
           </div>
-          <p className="note" style={{ margin: '12px 0 0' }}>
-            不选也可以，直接关掉。
-          </p>
         </>
       ) : (
         <>

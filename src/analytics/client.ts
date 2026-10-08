@@ -42,7 +42,7 @@ function send(event: TrackedEvent) {
       keepalive: true,
     }).catch(() => undefined);
   } catch {
-    /* 静默 */
+    /* 一切失败都静默 */
   }
 }
 

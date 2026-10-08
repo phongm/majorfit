@@ -64,8 +64,8 @@ export default function Results({ result, profile, wishlist, onBrowse, onContinu
   /** 通道受限的画像（艺考、体育）从不参与排序，所以不能把它们算进「参与排序的有多少个」 */
   const POOL = ALL_MAJORS.filter((m) => m.recommendable).length;
   const weakFrom = recommendations.findIndex((r) => best - r.score > 15);
-  /** 卡里只要有一条侧门/顺路，图例就值得占一行；全是正门时它就是 78 个字的噪声 */
-  const anyOffDoor = recommendations.some((r) => r.major.careerPaths.some((p) => p.fit !== 'main'));
+  /** 卡里只要有一条侧门/顺路，图例就值得占一行；全是正门时它就是 78 个字的噪声。自选区也用同一套标记，所以挑过专业就得显示 */
+  const anyOffDoor = recommendations.some((r) => r.major.careerPaths.some((p) => p.fit !== 'main')) || wishlist.length > 0;
 
   return (
     <Shell
@@ -98,8 +98,7 @@ export default function Results({ result, profile, wishlist, onBrowse, onContinu
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <span className={`badge ${LEVEL_BADGE[confidence.level]}`}>{LEVEL_TEXT[confidence.level]}</span>
           <span className="note">
-            在 {result.alternatesConsidered} 个可通过你硬性约束的专业里排序 ·
-            参与排序的是本库 {POOL} 个已录入且可推荐的专业画像，目录里的其余方向只能浏览与对照
+            在 {result.alternatesConsidered} 个可通过你硬性约束的专业里排序（本库可推荐 {POOL} 个）
           </span>
           {result.feasibleSetTooSmall && <span className="badge warn">可行集偏小</span>}
         </div>
@@ -153,9 +152,6 @@ export default function Results({ result, profile, wishlist, onBrowse, onContinu
       {result.excludedButRelevant.length > 0 && (
         <div className="card">
           <h3>你兴趣最匹配、却被条件挡掉的方向</h3>
-          <p className="note">
-            这一节比推荐更重要。它们说明你真正的兴趣和现实条件不在同一条线上 —— 要么去核实这个排除是否搞错了，要么接受兴趣需要换个出口。
-          </p>
           <ul className="list">
             {result.excludedButRelevant.slice(0, 6).map((e) => (
               <li key={e.majorId}>
@@ -163,15 +159,6 @@ export default function Results({ result, profile, wishlist, onBrowse, onContinu
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {weakFrom > 0 && (
-        <div className="card tight">
-          <p className="note" style={{ margin: 0 }}>
-            下面第 {weakFrom + 1} 位起的分数已经明显低于前几位。它们不是同等程度的推荐，
-            只是没被你的条件排除掉而已。真正值得你花时间去查培养方案的是前 {weakFrom} 个。
-          </p>
         </div>
       )}
 
@@ -219,11 +206,9 @@ export default function Results({ result, profile, wishlist, onBrowse, onContinu
       )}
 
       <div className="card">
-        <h3>怎么使用这份结果</h3>
+        <h3>怎么用这份结果</h3>
         <ol className="list">
-          <li>先把每条推荐里的「真实代价」和「接受条件」读完，再决定要不要保留它。</li>
-          <li>去目标院校官网把这个专业的<b>培养方案</b>下载下来，对照这里列的核心课程看一遍。看得下去再说喜欢。</li>
-          <li>找一到两个在读或毕业三年内的人问：你最后悔的是什么。这个问题比「你喜欢吗」有用。</li>
+          <li>去目标院校官网下载该专业的<b>培养方案</b>，对照这里列的核心课程看一遍。</li>
           <li>最终填报前，用省招办的官方目录核对选科要求与体检限制。这一步本系统不代替你。</li>
         </ol>
         <p className="note" style={{ marginTop: 14 }}>

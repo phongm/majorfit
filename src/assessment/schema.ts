@@ -29,7 +29,6 @@ export interface ProfileDelta {
     meaning: number;
     prestige: number;
   }>;
-  /** 采集到的硬约束 */
   constraints?: Partial<{
     postgradIntent: 'yes' | 'no' | 'undecided';
     maxProgramYears: number;
@@ -74,7 +73,7 @@ export interface SingleFactItem extends BaseItem {
   options: Option[];
 }
 
-/** 可多选，用于选科和排斥门类 */
+/** 用于选科和排斥门类 */
 export interface MultiFactItem extends BaseItem {
   kind: 'multi';
   options: Option[];

@@ -52,18 +52,26 @@ export default function App() {
   }, [answers]);
 
   const setAnswer = useCallback((id: string, value: Answers[string]) => {
-    setAnswers((prev) => {
-      const wasEmpty = isEmpty(prev[id]);
-      // 单选题首次作答后自动跳到下一题；多选题需要多次选择，不自动跳
-      if (wasEmpty) {
-        const target = ORDERED.find((i) => i.id === id);
-        if (target && target.kind !== 'multi') {
-          setTimeout(() => setCursor((c) => Math.min(c + 1, ORDERED.length - 1)), 350);
-        }
-      }
-      return { ...prev, [id]: value };
-    });
+    setAnswers((prev) => ({ ...prev, [id]: value }));
   }, []);
+
+  /**
+   * 单选题首次作答后自动跳到下一题；多选题要多次选择，不自动跳。
+   * 副作用必须留在这里而不是塞进 setAnswers 的 updater —— updater 会被 React
+   * 双调用（StrictMode 专门用它抓不纯），那样一次点击会跳两题。
+   */
+  const handleAnswer = useCallback(
+    (id: string, value: Answers[string]) => {
+      const wasEmpty = isEmpty(answers[id]);
+      setAnswer(id, value);
+      if (!wasEmpty) return;
+      const target = ORDERED.find((i) => i.id === id);
+      if (target && target.kind !== 'multi') {
+        setTimeout(() => setCursor((c) => Math.min(c + 1, ORDERED.length - 1)), 350);
+      }
+    },
+    [answers, setAnswer],
+  );
 
   // cursor 始终被 clamp 在 [0, len-1]，ORDERED 由题库保证非空
   const index = Math.max(0, Math.min(cursor, ORDERED.length - 1));
@@ -182,17 +190,15 @@ export default function App() {
         <h1>不看你想成为谁，看你受得了哪种辛苦</h1>
         <div className="card">
           <p className="lede">
-            {`多数专业测评的逻辑是「你喜欢与人打交道，所以推荐社会学」。这份系统不这么算。它按三条规则工作：`}
+            {`多数专业测评的逻辑是「你喜欢与人打交道，所以推荐社会学」。这份系统按三条规则工作：`}
           </p>
           <ol className="list">
             <li>
-              {`先问硬事实。选科组合、体检色觉、能接受的学制决定你能报什么。跳过这一步，推荐出来的专业你可能连报名资格都没有。`}
-              {`学费这一维本库只对艺术类专业核过档位，而艺术类走统考通道、不在推荐范围内，所以它目前用于提醒而不是用来排除 —— 报民办或中外合作要自己按院校章程核。`}
+              {`先问硬事实。选科组合、体检色觉、能接受的学制决定你能报什么，跳过这一步推荐结果可能根本不成立。`}
             </li>
             <li>{`问做过什么，不问觉得自己是什么。选项都是「有没有连续坚持过三个月」这类能拿出证据的事实。`}</li>
             <li>
-              {`兴趣几乎不加分，代价才是主变量。算下来兴趣契合最多给 8 分，而课程负载超出你能忍的程度最多扣 45 分。`}
-              {`决定排序的是你受不受得了它的苦，不是你觉得它酷不酷。兴趣很高但耐受不够的专业会被压下去，并告诉你为什么。`}
+              {`兴趣只当门槛，不当加分。决定排序的是你受不受得了它的苦，不是你觉得它酷不酷。`}
             </li>
           </ol>
           <p className="note" style={{ marginTop: 14 }}>
@@ -203,13 +209,13 @@ export default function App() {
         <div className="card tight">
           <h3>关于你的数据</h3>
           <p className="note" style={{ margin: 0 }}>
-            {`你的答题内容只存在这台设备的浏览器里，不会上传。服务器只收到几个数字：有人打开了、有人开始答了、有人答完了、答了几题、这份结果的置信度等级、推荐了哪几个专业、你挑进自选清单的是哪几个专业、以及你愿不愿意给一句反馈。`}
-            {`每次打开页面会生成一个随机会话号，用来把这几步串成一条漏斗，关掉页面即失效，不跨会话追踪。没有姓名、学校、分数，也没有任何一题的选择。`}
-            {`两句实话：可行专业的`}
+            {`答题内容只存在这台设备的浏览器里，不会上传。服务器只收到几个数字：是否打开、是否开始、是否答完、答了几题、结果的置信度等级、推荐了哪几个专业、你挑进自选清单的是哪几个专业，以及你自愿填写的一句反馈。`}
+            {`每次打开页面生成一个随机会话号把这些串起来，关掉页面即失效。没有姓名、学校、分数，也没有任何一题的选择。`}
+            {`两处要留意：可行专业的`}
             <b>数量</b>
-            {`会被一起上报，它间接反映了几道约束题的答案；而反馈里你自愿写的那段文字会`}
+            {`会间接反映几道约束题的答案；反馈里你自愿写的文字会`}
             <b>原样存到服务器</b>
-            {`，所以别在里面写自己的信息。`}
+            {`，别在里面写自己的信息。`}
           </p>
         </div>
 
@@ -321,7 +327,7 @@ export default function App() {
         index={cursor}
         total={ORDERED.length}
         answers={answers}
-        onChange={setAnswer}
+        onChange={handleAnswer}
       />
 
     </Shell>

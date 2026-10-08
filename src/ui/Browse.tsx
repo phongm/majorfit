@@ -141,7 +141,7 @@ export default function Browse({ selected, onToggle, onBack, from = 'intro' }: P
     >
         <div className="card">
           <p className="note" style={{ margin: 0 }}>
-            专业目录这一块没能下载下来，多半是站点刚重新部署、你手上这个页面的旧引用已经失效。
+            专业目录加载失败。
             <button className="btn link" onClick={() => setAttempt((n) => n + 1)}>
               再试一次
             </button>
@@ -198,10 +198,10 @@ export default function Browse({ selected, onToggle, onBack, from = 'intro' }: P
       <div className="card tight">
         <p className="note" style={{ margin: 0 }}>
           挑几个你正在看的方向，结果页会把它们和你的作答放在一起比 ——
-          <b> 挑了不会让它们排到前面</b>，这个系统的立场是兴趣只当门槛，不当加分。
+          <b> 挑了不会让它们排到前面</b>，只用来做对照。
         </p>
         <p className="note" style={{ margin: '8px 0 0' }}>
-          {`去向（读完大概做什么、占不占正门）只给了人工核对过的 ${CAREER_COVERED} 个方向；其余方向只有推断出来的画像，没有这项数据，挑进清单后会直接说明。`}
+          {`去向（读完大概做什么）只有人工核对过的 ${CAREER_COVERED} 个方向有数据，其余方向挑进清单后会直接说明。`}
         </p>
       </div>
 
