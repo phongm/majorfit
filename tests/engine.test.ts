@@ -6,6 +6,7 @@ import { ALL_MAJORS } from '../src/data/majors';
 import { MAJORS_BY_ID } from '../src/data/majors';
 import { LOAD_LABELS, type MajorProfile } from '../src/domain/types';
 import { uncheckedHealthDims } from '../src/ui/provenance';
+import { buildNarrative } from '../src/engine/explain';
 import { makeAnswers, neutralAnswers } from './helpers';
 
 function run(overrides: [string, AnswerValue][] = [], topN = 5) {
@@ -156,6 +157,102 @@ describe('多样性重排', () => {
     const categories = new Set(result.recommendations.map((r) => r.major.category));
     expect(categories.size).toBeGreaterThanOrEqual(2);
   });
+
+  /**
+   * 回归：门类覆盖度交换一度没有下限，于是「前四位 82-87 分、第五位 56 分的哲学」
+   * 这种列表真的出现过 —— 用户看得见的不是覆盖度，是一个凑数的推荐。
+   */
+  it('为了门类覆盖换进来的专业必须自己站得住', () => {
+    const { result } = run([
+      ['e_fix', 'many'],
+      ['e_code', 'own'],
+      ['e_precise', 'yes'],
+      ['e_grit', 'several'],
+      ['t_math', 'hard'],
+      ['t_memorize', 'done'],
+      ['t_lab', 'build'],
+      ['t_field', 'site'],
+      ['v_depth', 'broad'],
+      ['v_applied', 'use'],
+      ['v_family', 'obey'],
+    ]);
+    expect(result.recommendations).toHaveLength(5);
+    for (const r of result.recommendations) {
+      expect(r.major.name, `凑数进来的 ${r.major.name}`).not.toBe('哲学');
+      expect(r.score).toBeGreaterThanOrEqual(70);
+    }
+  });
+});
+
+describe('理论胃口与落地胃口', () => {
+  const byName = (name: string) => ALL_MAJORS.find((m) => m.name === name)!;
+  const profileOf = (overrides: [string, AnswerValue][]) => assess(neutralAnswers(overrides)).profile;
+
+  /** 只答「我扛得住」没答「我要不要」时，这条规则等于没跑，不能凭空罚 */
+  it('没测出胃口时这一项必须是零', () => {
+    const p = profileOf([]);
+    p.unmeasured.theoryVsApplied = true;
+    expect(score(byName('数学与应用数学'), p).breakdown.theoryMismatch).toBeCloseTo(0);
+    expect(score(byName('财务管理'), p).breakdown.theoryMismatch).toBeCloseTo(0);
+  });
+
+  it('想搞原理的人，喂不饱他的专业要吃罚分；想落地的人反方向同样', () => {
+    const theory = profileOf([['v_applied', 'why'], ['t_proof', 'enjoy'], ['e_why', 'recent']]);
+    // 满供给的专业一分不扣，低供给的按缺口扣
+    expect(score(byName('数学与应用数学'), theory).breakdown.theoryMismatch).toBeCloseTo(0);
+    expect(score(byName('财务管理'), theory).breakdown.theoryMismatch).toBeLessThan(-5);
+
+    const applied = profileOf([['v_applied', 'use'], ['t_proof', 'shutdown'], ['e_why', 'never']]);
+    const light = score(byName('财务管理'), applied).breakdown.theoryMismatch;
+    const heavy = score(byName('数学与应用数学'), applied).breakdown.theoryMismatch;
+    expect(heavy).toBeLessThan(-4);
+    // 供给低不等于没供给，所以这一侧只该是很小的一笔
+    expect(light).toBeGreaterThan(-3);
+    expect(light).toBeGreaterThan(heavy);
+  });
+
+  /**
+   * 产品口径：一个什么都扛得住、又要原理的人，不该被「轻松且不要求任何东西」的管理类专业顶到前面。
+   * 负载罚分在他身上接近零，区分只能来自胃口。
+   */
+  it('全耐受但追求原理的人，前五位是给得出原理的方向，不是低要求的管理类', () => {
+    const a = assess(
+      neutralAnswers([
+        ['e_fix', 'many'],
+        ['e_why', 'recent'],
+        ['e_system', 'real'],
+        ['e_precise', 'yes'],
+        ['e_code', 'own'],
+        ['e_grit', 'several'],
+        ['e_emotion', 'distract'],
+        ['t_math', 'hard'],
+        ['t_proof', 'enjoy'],
+        ['t_memorize', 'done'],
+        ['t_lab', 'wet'],
+        ['t_write', 'can'],
+        ['t_data', 'love'],
+        ['t_deadline', 'thrive'],
+        ['v_depth', 'deep'],
+        ['v_solved', 'open'],
+        ['v_applied', 'why'],
+        ['f_postgrad', 'yes'],
+        ['v_delay', 'b'],
+      ]),
+    );
+    const result = recommend(a, { topN: 5, majors: ALL_MAJORS });
+    const picked = result.recommendations.map((r) => r.major.name);
+    expect(picked).not.toContain('财务管理');
+    expect(picked).not.toContain('物流管理');
+    expect(picked).toContain('数学与应用数学');
+  });
+
+  it('错配要在代价里说人话，不能只是一个负数', () => {
+    const theoryProfile = profileOf([['v_applied', 'why'], ['t_proof', 'enjoy'], ['e_why', 'recent']]);
+    const s = score(byName('财务管理'), theoryProfile);
+    const n = buildNarrative(s, theoryProfile);
+    expect(s.breakdown.theorySide).toBe('starved');
+    expect(n.costs.join('\n')).toContain('会用就行');
+  });
 });
 
 describe('不确定时必须降级，而不是硬给一份好看的排序', () => {
@@ -229,6 +326,35 @@ describe('不确定时必须降级，而不是硬给一份好看的排序', () =
 });
 
 describe('确定性', () => {
+  /**
+   * 基准分写在测试里是故意的：新增一项罚分却没进 ScoreBreakdown 时，
+   * 分项加起来不等于总分，结果页的解释就成了一句假话。这条负责响。
+   */
+  it('分项必须加总等于总分', () => {
+    const BASE = 82;
+    const cases: [string, AnswerValue][][] = [
+      [],
+      [['v_applied', 'why'], ['t_proof', 'enjoy']],
+      [['t_math', 'hate'], ['e_code', 'hate']],
+    ];
+    for (const overrides of cases) {
+      const profile = assess(neutralAnswers(overrides)).profile;
+      for (const m of ALL_MAJORS) {
+        const s = score(m, profile);
+        const b = s.breakdown;
+        const sum =
+          BASE +
+          b.interestFit +
+          b.loadPenalty +
+          b.valueAlignment +
+          b.educationMismatch +
+          b.rewardMismatch +
+          b.theoryMismatch;
+        expect(sum, m.name).toBeCloseTo(s.rawScore, 8);
+      }
+    }
+  });
+
   it('同一份输入两次运行结果完全一致', () => {
     const a = neutralAnswers([['t_math', 'hard'], ['e_code', 'own']]);
     const first = recommend(assess(a), { majors: ALL_MAJORS });
@@ -549,10 +675,32 @@ describe('文案不许自相矛盾', () => {
   it('置信度文案不许声称做过多次观测交叉验证 —— 题库结构上就没做', () => {
     const a = assess(neutralAnswers());
     expect(a.diagnostics.thin.length, '这套题库里必然存在单次观测的维度').toBeGreaterThan(0);
-    const result = recommend(a, { majors: ALL_MAJORS, topN: 5 });
+    // 夹具必须带一条真冲突，否则这条用例验不到「说中真实原因」
+    const conflict = assess(neutralAnswers([['e_teach', 'long'], ['t_people_daily', 'impossible']]));
+    const result = recommend(conflict, { majors: ALL_MAJORS, topN: 5 });
     expect(result.confidence.note).not.toMatch(/多次观测|两道题测到/);
     // 但必须说中真实原因
     expect(result.confidence.note).toContain('回答互相冲突');
+    expect(result.confidence.contradictions.length).toBeGreaterThan(0);
+  });
+
+  it('两道 forced 题在同一价值上取向相反，不算用户自相矛盾', () => {
+    // forced 题写的是各自情景里的取舍：选编制稳定 + 行业收缩时仍追热爱，是两个独立决定
+    const a = assess(neutralAnswers([['v_stable_income', 'stable'], ['v_shrink', 'follow']]));
+    const stability = a.measurement.values.stability!;
+    expect(stability.observations.length).toBeGreaterThanOrEqual(2);
+    expect(Math.max(...stability.observations.map((o) => o.value)) - Math.min(...stability.observations.map((o) => o.value))).toBeGreaterThan(0.72);
+    expect(a.diagnostics.contradictions.filter((c) => c.dimension === 'value.stability')).toEqual([]);
+  });
+
+  it('没有追问可补时，文案不许让用户去补一个不存在的追问', () => {
+    const result = recommend(assess(neutralAnswers([['e_teach', 'long'], ['t_people_daily', 'impossible']])), {
+      majors: ALL_MAJORS,
+      topN: 5,
+    });
+    expect(result.confidence.gaps.length).toBe(0);
+    expect(result.confidence.level).toBe('medium');
+    expect(result.confidence.note).not.toContain('追问');
   });
 
   it('少答一项硬条件就不许说「硬条件填全了」并亮 high 徽章', () => {

@@ -144,6 +144,10 @@ function collectGaps(profile: UserProfile, recommendations: Recommendation[]): s
     if (prompt) gaps.push(`你没答自己在「${VALUE_LABELS[v]}」上的取舍。建议补答：${prompt}`);
   }
   if (profile.unmeasured.grit) gaps.push(`没答过长周期投入的经历。建议补答：${questionPrompt('e_grit')}`);
+  /** 理论胃口现在直接参与排序，它没测到时这条规则等于没跑，得说而不是静默跳过 */
+  if (profile.unmeasured.theoryVsApplied) {
+    gaps.push(`没测出你要的是原理还是落地，而这一项现在会影响排序。建议补答：${questionPrompt('v_applied')}`);
+  }
   /**
    * 明确答了「没确认过」的人是**有作答**，不会进 unmeasured，所以也就不会出现在
    * skippedRules 里 —— 少了这一句，这批最该被提醒的人只会看到「置信度中」，
@@ -209,12 +213,13 @@ function buildConfidence(
   /**
    * 文案只描述真的做了的校验。数学、编程、记忆量这些维度结构上只由一道题测到，
    * 所以任何版本都不许说「每个维度都有多次观测支撑」。
+   * 同理：gaps 为空时不许说「把下面的追问补完」——那会让用户盯着一个空区块找东西。
    */
   const note =
     level === 'high'
       ? '回答之间没有冲突，硬条件填全了，前几位用得上的负载维度也都测到了，可以按这份排序参考。'
       : level === 'medium'
-        ? `这份排序可用，但${reasons.slice(0, 3).join('；')}。请把下面的追问补完再定。`
+        ? `这份排序可用，但${reasons.slice(0, 3).join('；')}${gaps.length ? '。请把下面的追问补完再定' : ''}。`
         : `信息不足以支撑一份可靠的排序（${reasons.slice(0, 3).join('；')}）。这份结果只能当方向提示，不要拿它做决定。`;
 
   return { level, contradictions, gaps: [...new Set(gaps)], note };

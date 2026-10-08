@@ -218,7 +218,18 @@ describe('结果页骨架', () => {
     );
 
   it('界面上说「去补答」，就必须真有一个不清存档的入口', () => {
-    const html = renderResults([]);
+    // 正文只在真检出冲突时才指向这条路，所以夹具得自带一条真冲突（两道 behavior 题互斥）
+    const withConflict = assess(neutralAnswers([['e_teach', 'long'], ['t_people_daily', 'impossible']]));
+    const html = renderToStaticMarkup(
+      <Results
+        result={recommend(withConflict, { majors: ALL_MAJORS, topN: 5 })}
+        profile={withConflict.profile}
+        wishlist={[]}
+        onBrowse={() => undefined}
+        onContinue={() => undefined}
+        onRestart={() => undefined}
+      />,
+    );
     // 头部按钮单独渲染这四个字，所以只断 toContain 是恒真的：
     // 要断的是「正文里也真的指向它」，出现次数必须 ≥2
     expect((html.match(/继续补答/g) ?? []).length).toBeGreaterThanOrEqual(2);

@@ -240,12 +240,43 @@ function rewardFit(major: ScoreableMajor, profile: UserProfile) {
   return { penalty: clamp(penalty, 0, 15) };
 }
 
+/**
+ * 胃口错配：负载维度只问「你受不受得了」，是天花板；这一项问「你想不想」。
+ * 一个什么都扛得住的人，全部负载罚分趋近于 0，此时区分专业的是供给与需求的错位，
+ * 而不是他能不能读完。两个方向都罚：想搞原理的专业不教原理，想落地的专业全是推导。
+ * 与 abstraction 的负载罚分不重复 —— 那一项在「要求高于耐受」时才触发，方向相反。
+ */
+const THEORY_K = 22;
+const THEORY_CAP = 10;
+/** 胃口落在中区间时不罚：±0.2 以内说明这个人自己也没表态 */
+const THEORY_DEADZONE = 0.2;
+
+type Appetite = 'starved' | 'swamped' | null;
+
+function theoryFit(major: ScoreableMajor, profile: UserProfile): { penalty: number; side: Appetite } {
+  if (profile.unmeasured.theoryVsApplied) return { penalty: 0, side: null };
+  const want = profile.theoryVsApplied;
+  const supply = major.load.abstraction;
+  const starved = Math.max(0, want - THEORY_DEADZONE) * (1 - supply);
+  const swamped = Math.max(0, -want - THEORY_DEADZONE) * supply;
+  const side: Appetite = starved >= swamped ? (starved > 0 ? 'starved' : null) : 'swamped';
+  return { penalty: clamp(Math.max(starved, swamped) * THEORY_K, 0, THEORY_CAP), side };
+}
+
+/**
+ * 门类覆盖度交换的下限。
+ * 不设下限时会拿一个六十来分的专业换掉八十多分的第 5 名，
+ * 用户看到的是「85、84、83、82、56」这种列表，第 5 行毫无说服力。
+ */
+const COVERAGE_MIN_SCORE = 70;
+
 export function score<M extends ScoreableMajor>(major: M, profile: UserProfile): Scored<M> {
   const interest = interestFit(major, profile);
   const load = loadFit(major, profile);
   const value = valueFit(major, profile);
   const edu = educationFit(major, profile);
   const reward = rewardFit(major, profile);
+  const theory = theoryFit(major, profile);
 
   const raw =
     BASE_SCORE -
@@ -253,7 +284,8 @@ export function score<M extends ScoreableMajor>(major: M, profile: UserProfile):
     load.penalty -
     value.penalty -
     edu.penalty -
-    reward.penalty +
+    reward.penalty -
+    theory.penalty +
     interest.bonus +
     value.bonus +
     edu.bonus;
@@ -279,6 +311,8 @@ export function score<M extends ScoreableMajor>(major: M, profile: UserProfile):
       valueAlignment: -value.penalty + value.bonus,
       educationMismatch: -edu.penalty + edu.bonus,
       rewardMismatch: -reward.penalty,
+      theoryMismatch: -theory.penalty,
+      theorySide: theory.side,
       loadGaps: load.gaps,
       unmeasuredHighLoad: load.unmeasuredHighLoad,
       riskFlags,
@@ -318,12 +352,14 @@ export function rerankForDiversity<M extends ScoreableMajor>(scored: Scored<M>[]
     accept(s);
   }
 
-  // 门类覆盖度：不足 3 个门类时，用次优的其他门类换掉末位
+  // 门类覆盖度：不足 3 个门类时，用次优的其他门类换掉末位。
+  // 交换对象必须自己还站得住：宁可前五位都是工学，也不塞一个六十分的进来充门面
   const categoriesOf = () => new Set(picked.map((p) => p.major.category));
   if (picked.length >= 3 && categoriesOf().size < 3) {
     for (const s of scored) {
       if (picked.length < 3 || categoriesOf().size >= 3) break;
       if (taken.has(s.major.id) || categoriesOf().has(s.major.category)) continue;
+      if (s.score < COVERAGE_MIN_SCORE) break;
       const dropped = picked.pop();
       if (dropped) taken.delete(dropped.major.id);
       accept(s);

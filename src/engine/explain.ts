@@ -67,6 +67,10 @@ export function buildNarrative(s: Scored, profile: UserProfile): Narrative {
   if (intentKnown(profile) && profile.constraints.postgradIntent === 'no' && m.undergradJobFit >= 0.75) {
     matched.push('你不想读研，而它本科毕业就能直接对口就业');
   }
+  /** 胃口项生效的正面一侧：课程真的压在原理上，而这个人就是要原理 */
+  if (!profile.unmeasured.theoryVsApplied && profile.theoryVsApplied >= 0.5 && m.load.abstraction >= 0.7) {
+    matched.push('它的核心课真的停在推导和证明上，而你要的就是这个');
+  }
   if (wants(profile, 'stability', 0.7) && m.civilServiceFit >= 0.7) {
     matched.push('你看重稳定，它在考公与事业编的可报口径里属于岗位多的一类');
   }
@@ -89,6 +93,15 @@ export function buildNarrative(s: Scored, profile: UserProfile): Narrative {
     );
   }
   costs.push(...m.honestDrawbacks.slice(0, 3));
+  /**
+   * 胃口错配的负面一侧。抽象理论的耐受度已经出现在上面的负载缺口里时不再重复一次，
+   * 否则同一张卡片会连着两句「它太理论了」，一句说扛不住、一句说不要。
+   */
+  if (s.breakdown.theorySide === 'starved') {
+    costs.push('它的课基本停在「会用就行」，不会带你往下追问为什么');
+  } else if (s.breakdown.theorySide === 'swamped' && !s.breakdown.loadGaps.some((g) => g.dim === 'abstraction')) {
+    costs.push('它的核心课大量停在推导与证明上，而你要的是尽快拿它做出东西');
+  }
   if (m.marketTrend === 'contracting' || m.marketTrend === 'cooling') {
     costs.push(`行业${TREND_LABEL[m.marketTrend]}：${m.marketNote}`);
   }

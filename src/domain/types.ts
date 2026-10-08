@@ -456,6 +456,10 @@ export interface ScoreBreakdown {
   educationMismatch: number;
   /** 就业兑现与收入预期的错配，负值 */
   rewardMismatch: number;
+  /** 想不想碰原理与这个专业教不教原理的错配，负值。那边是扛不扛得住，这一项是要不要 */
+  theoryMismatch: number;
+  /** 错配方向：starved 是想搞原理而这里不教，swamped 是想落地而这里全是推导 */
+  theorySide: 'starved' | 'swamped' | null;
   /** 具体超出耐受度的负载维度，供结果页逐条说明代价 */
   loadGaps: LoadGap[];
   /** 专业要求高、但用户该维度未测出的项 —— 不能假设他受得了 */

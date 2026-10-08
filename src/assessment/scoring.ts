@@ -340,6 +340,14 @@ export function promptOf(itemId: string) {
   return ITEMS_BY_ID.get(itemId)?.prompt ?? itemId;
 }
 
+/**
+ * forced 题写的是「同一情景里两个好东西只能选一个」，delta 是那个情景内的相对取舍，
+ * 不是这个价值的绝对水平。不同题的情景不同，同一维度上一高一低完全正常：
+ * v_stable_income 选编制（stability 0.95）与 v_shrink 选追热爱（0.15）不构成自相矛盾，
+ * 把它们判成冲突会让每个答完题的人都背上「你在自相矛盾」，并永久压住置信度。
+ */
+const isForcedChoice = (itemId: string) => ITEMS_BY_ID.get(itemId)?.kind === 'forced';
+
 function detectSpanContradictions(group: string, store: Store, span: number): Contradiction[] {
   const out: Contradiction[] = [];
   for (const [dim, obs] of store) {
@@ -350,6 +358,7 @@ function detectSpanContradictions(group: string, store: Store, span: number): Co
     if (hi.value - lo.value < span) continue;
     // 两个观测来自同一题的不同选项时不算矛盾（那是多选的正常分布）
     if (lo.item === hi.item) continue;
+    if (isForcedChoice(lo.item) || isForcedChoice(hi.item)) continue;
     const dimension = `${group}.${dim}`;
     out.push({
       dimension,
