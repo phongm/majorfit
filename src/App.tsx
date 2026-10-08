@@ -52,7 +52,17 @@ export default function App() {
   }, [answers]);
 
   const setAnswer = useCallback((id: string, value: Answers[string]) => {
-    setAnswers((prev) => ({ ...prev, [id]: value }));
+    setAnswers((prev) => {
+      const wasEmpty = isEmpty(prev[id]);
+      // 单选题首次作答后自动跳到下一题；多选题需要多次选择，不自动跳
+      if (wasEmpty) {
+        const target = ORDERED.find((i) => i.id === id);
+        if (target && target.kind !== 'multi') {
+          setTimeout(() => setCursor((c) => Math.min(c + 1, ORDERED.length - 1)), 350);
+        }
+      }
+      return { ...prev, [id]: value };
+    });
   }, []);
 
   // cursor 始终被 clamp 在 [0, len-1]，ORDERED 由题库保证非空
