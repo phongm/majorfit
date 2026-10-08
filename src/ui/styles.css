@@ -1,0 +1,892 @@
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --ink: #1b1c1e;
+  --ink-2: #4a4d52;
+  --ink-3: #7d818a;
+  --line: #e2e0da;
+  --accent: #1f5c4d;
+  --accent-soft: #e7f0ed;
+  --warn: #a3521c;
+  --warn-soft: #fbf0e6;
+  --bad: #9b2c2c;
+  --bad-soft: #fbeaea;
+  --radius: 10px;
+  --max: 760px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 26px 20px 48px;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+/* ---------- 三段式骨架：头/脚固定，只有中间滚 ---------- */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: var(--shell-h, 100dvh);
+}
+
+.shell-top,
+.shell-foot {
+  flex: 0 0 auto;
+  background: var(--bg);
+}
+
+.shell-top {
+  z-index: 6;
+  border-bottom: 1px solid var(--line);
+}
+
+.shell-foot {
+  z-index: 6;
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 只在有 fixed 浮层的那一页用 */
+.floater-space {
+  height: 132px;
+}
+
+/* 头、脚、内容三块共用同一条居中线，否则 760px 宽的正文会跟满宽头部错开 */
+.shell-line {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 14px 20px;
+}
+
+.shell-body {
+  /* 必须定位：.sr-only 是 position:absolute，没有定位祖先时包含块会落到文档上，
+     它的静态位置在滚动区深处（实测 y≈6000），于是把整份文档撑高、页面自己也能滚了。
+     量过：加这一行前 documentElement.scrollHeight=5913，加后=900 */
+  position: relative;
+  flex: 1 1 auto;
+  /* 只写 overflow-y 会让 overflow-x 从 visible 变成 auto，
+     内容偶尔溢出 1px 就会凭空多出一条横向滚动条 */
+  overflow: hidden auto;
+  /* 滚到底不带动整页回弹，桌面端也不会出现两层滚动条 */
+  overscroll-behavior: contain;
+}
+
+/* 分隔线已经由脚部这条来画了 */
+.shell-foot .nav {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.brand {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.brand span {
+  color: var(--ink-3);
+  font-weight: 400;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+h1 {
+  font-size: 27px;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+}
+
+h2 {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+
+h3 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 0 0 8px;
+}
+
+p {
+  margin: 0 0 14px;
+}
+
+.lede {
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+
+.card.tight {
+  padding: 16px 18px;
+}
+
+/* ---------- 进度 ---------- */
+.progress {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+  padding: 10px 0 12px;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.progress-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 16px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+
+/* 计数器被挤成「已答 38 /」+「39」两行是窄屏最容易破相的地方 */
+.progress-meta > span:first-child {
+  white-space: nowrap;
+}
+
+/* ---------- 题目 ---------- */
+.qhead {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.qindex {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  padding-top: 5px;
+  flex: 0 0 auto;
+}
+
+.qprompt {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.qmeasuring {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin: 2px 0 0 34px;
+}
+
+.qhelp {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  padding: 9px 12px;
+  margin: 12px 0 16px 34px;
+  border-radius: 0 6px 6px 0;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 0 34px;
+}
+
+.opt {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s;
+}
+
+.opt:hover {
+  border-color: var(--accent);
+}
+
+.opt[aria-checked='true'],
+.opt.picked {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dot {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-3);
+  margin-top: 6px;
+}
+
+.opt[aria-checked='true'] .dot,
+.opt.picked .dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.dot.sq {
+  border-radius: 4px;
+}
+
+.opt-body {
+  flex: 1 1 auto;
+}
+
+.opt-label {
+  display: block;
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+.opt-sub {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* ---------- 反馈浮层 ---------- */
+.floater {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  width: min(400px, calc(100vw - 32px));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.13);
+  padding: 18px 20px;
+  animation: rise 0.22s ease-out;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.floater-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.floater h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.close {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-3);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.close:hover {
+  color: var(--ink);
+}
+
+.floater .options {
+  margin: 14px 0 0;
+}
+
+.field {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14.5px;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  resize: vertical;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.floater .nav {
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+@media (max-width: 560px) {
+  .floater {
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+}
+
+/* ---------- 导航 ---------- */
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+button.btn {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  transition: background 0.14s, border-color 0.14s;
+}
+
+button.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.btn.primary:hover {
+  background: #17483d;
+}
+
+button.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+button.btn.ghost:hover {
+  color: var(--ink);
+}
+
+.nav-spacer {
+  flex: 1 1 auto;
+}
+
+/* ---------- 结果 ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  background: #fafaf8;
+}
+
+.badge.ok {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: #cfe0da;
+}
+
+.badge.warn {
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-color: #f0dcc8;
+}
+
+.badge.bad {
+  color: var(--bad);
+  background: var(--bad-soft);
+  border-color: #f0cccc;
+}
+
+.rec-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.rec-rank {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-name {
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+.rec-meta {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-top: 3px;
+}
+
+.score-wrap {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.score-num {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.score-bar {
+  width: 120px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.score-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14.5px;
+}
+
+.list li {
+  margin-bottom: 6px;
+}
+
+.list.cost li::marker {
+  color: var(--warn);
+}
+
+/* 去向行：岗位名 + 两个徽章 + 一句备注，行内排布要自己留间距和呼吸 */
+.careers li {
+  margin-bottom: 12px;
+}
+
+/* 三档一律中性描边：绿/橙/红已经被「数据可靠度」徽章占用，复用会让人把「正门」
+   读成「这岗位好」、把「顺路」读成「这数据不可信」 */
+.careers .badge.fit {
+  color: var(--ink-2);
+  border-color: var(--ink-3);
+  line-height: 1.2;
+}
+
+/* flex 放在行内层：li 自己保持 list-item，否则 ::marker 圆点不生成，
+   而同卡其它列表有圆点，缩进就对不上 */
+.career-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.careers-more {
+  color: var(--ink-3);
+  font-size: 13px;
+  list-style: none;
+}
+
+.careers .note {
+  margin-top: 3px;
+}
+
+.block {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+
+.block h3 {
+  font-size: 13px;
+  text-transform: none;
+  color: var(--ink-2);
+  letter-spacing: 0;
+}
+
+.block.match h3 {
+  color: var(--accent);
+}
+
+.block.cost h3 {
+  color: var(--warn);
+}
+
+.block.risk h3 {
+  color: var(--bad);
+}
+
+.note {
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+details {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fdfdfc;
+}
+
+details > summary {
+  cursor: pointer;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::before {
+  content: '▸ ';
+  color: var(--ink-3);
+}
+
+details[open] > summary::before {
+  content: '▾ ';
+}
+
+details .inner {
+  padding: 0 14px 14px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 4px 12px;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.kv dt {
+  color: var(--ink-3);
+}
+
+.kv dd {
+  margin: 0;
+}
+
+.tagline {
+  font-size: 14px;
+  color: var(--ink-2);
+  background: #fafaf8;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 14px 0 0;
+}
+
+.quality {
+  font-size: 12.5px;
+  color: var(--warn);
+}
+
+.center {
+  text-align: center;
+  padding: 40px 0 10px;
+}
+
+@media (max-width: 560px) {
+  .wrap {
+    padding: 18px 14px 32px;
+  }
+  .shell-line {
+    padding: 12px 14px;
+  }
+  /* 窄屏下动作按钮换到第二行：让它占满整行，左缘与标题对齐，而不是悬在中间 */
+  .top-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+  .qmeasuring,
+  .qhelp,
+  .options {
+    margin-left: 0;
+  }
+  .rec-head {
+    flex-direction: column;
+  }
+  .score-wrap {
+    text-align: left;
+  }
+}
+
+.browse-tools {
+  margin: 18px 0 6px;
+}
+
+/* 只给读屏用的可见性隐藏：不能用 display:none，那会让辅助技术也读不到 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.browse-search {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.chip {
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip.on {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+details.class {
+  margin: 10px 0 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+details.class > summary {
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+details.class > summary::-webkit-details-marker {
+  display: none;
+}
+
+.class.flat {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.pick-class {
+  margin-left: 8px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+details.class .count {
+  margin-left: 8px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.pick-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.pick-row.on {
+  background: var(--accent-soft);
+}
+
+.pick-btn {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.pick-row.on .pick-btn {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pick-body {
+  min-width: 0;
+}
+
+.pick-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pick-code {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.pick-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  margin-top: 2px;
+  font-size: 12.5px;
+}
+
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn.link {
+  padding: 0;
+  font-size: 14px;
+  color: var(--accent);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  border-radius: 0;
+}
+
+.picked-row {
+  padding: 10px 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.picked-row .picked-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.picked-row.ok {
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+}
+
+.picked-row.warn {
+  border-left: 3px solid var(--warn);
+  padding-left: 10px;
+}
+
+.picked-row.bad {
+  border-left: 3px solid var(--bad);
+  padding-left: 10px;
+}

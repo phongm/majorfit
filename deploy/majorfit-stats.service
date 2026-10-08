@@ -1,0 +1,33 @@
+[Unit]
+Description=专业适配 · 统计上报服务
+After=network.target
+
+[Service]
+Type=simple
+User=majorfit
+Group=majorfit
+WorkingDirectory=/opt/majorfit
+
+# 只监听回环地址，对外由 Nginx 反代
+Environment=PORT=8787
+Environment=LOG_DIR=/var/log/majorfit
+Environment=RATE_PER_MIN=30
+# 生成方式：openssl rand -hex 24
+Environment=STATS_TOKEN=换成你自己的随机串
+# 前面有 Nginx 反代才设 1；直连暴露时保持 0，否则 X-Forwarded-For 可被伪造绕过限流
+Environment=TRUST_PROXY=1
+
+ExecStart=/usr/bin/node server/index.ts
+Restart=always
+RestartSec=3
+
+# 日志目录要在启动前建好并授权
+# install -d -o majorfit -g majorfit /var/log/majorfit /var/www/majorfit
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/log/majorfit
+
+[Install]
+WantedBy=multi-user.target
