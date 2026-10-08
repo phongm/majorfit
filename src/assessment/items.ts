@@ -3,7 +3,7 @@ import type { Answers } from './scoring';
 
 /**
  * 题库。tolerance / interests 的取值一律是「该选项对应的绝对水平」，
- * 同一维度被多题测到时由 scoring 取加权平均并记录样本数，
+ * 同一维度被多题测到时由 scoring 取平均并记录样本数，
  * 样本数不足 2 的维度会被标记为低置信，而不是假装测准了。
  */
 export const ITEMS: Item[] = [
@@ -204,10 +204,10 @@ export const ITEMS: Item[] = [
     prompt: '有没有一段超过一个月的时间里，你在持续教别人、照顾别人或者为别人负责？',
     help: '给同学讲过一道题不算，那是单次。',
     options: [
-      { id: 'long', label: '有，而且是固定的（带社团、长期辅导、照顾家人、志愿者、陪护）', delta: { interests: { S: 0.95 }, solitudeVsPeople: 0.7, tolerance: { interpersonal: 0.85 } } },
-      { id: 'mid', label: '有，但只有几周', delta: { interests: { S: 0.6 }, solitudeVsPeople: 0.3, tolerance: { interpersonal: 0.6 } } },
-      { id: 'ad_hoc', label: '只有同学来问我时才帮', delta: { interests: { S: 0.35 }, solitudeVsPeople: 0 } },
-      { id: 'avoid', label: '没有，我基本不主动介入别人的事', delta: { interests: { S: 0.08 }, solitudeVsPeople: -0.6 } },
+      { id: 'long', label: '有，而且是固定的（带社团、长期辅导、照顾家人、志愿者、陪护）', delta: { interests: { S: 0.95 }, tolerance: { interpersonal: 0.85 } } },
+      { id: 'mid', label: '有，但只有几周', delta: { interests: { S: 0.6 }, tolerance: { interpersonal: 0.6 } } },
+      { id: 'ad_hoc', label: '只有同学来问我时才帮', delta: { interests: { S: 0.35 } } },
+      { id: 'avoid', label: '没有，我基本不主动介入别人的事', delta: { interests: { S: 0.08 } } },
     ],
   },
   {
@@ -217,20 +217,20 @@ export const ITEMS: Item[] = [
     measuring: '企业型（E）：把一群人说服并带走的结果',
     prompt: '你有没有成功让一批本来不想动的人跟你一起做一件事？（活动、项目、生意都行）',
     options: [
-      { id: 'repeated', label: '有过不止一次，而且我知道怎么做到的', delta: { interests: { E: 0.95 }, solitudeVsPeople: 0.6 } },
-      { id: 'once', label: '有过一次', delta: { interests: { E: 0.65 }, solitudeVsPeople: 0.3 } },
-      { id: 'tried', label: '试过，没成，我很累', delta: { interests: { E: 0.3 }, solitudeVsPeople: -0.2 } },
-      { id: 'never', label: '没兴趣干这事', delta: { interests: { E: 0.05 }, solitudeVsPeople: -0.5 } },
+      { id: 'repeated', label: '有过不止一次，而且我知道怎么做到的', delta: { interests: { E: 0.95 } } },
+      { id: 'once', label: '有过一次', delta: { interests: { E: 0.65 } } },
+      { id: 'tried', label: '试过，没成，我很累', delta: { interests: { E: 0.3 } } },
+      { id: 'never', label: '没兴趣干这事', delta: { interests: { E: 0.05 } } },
     ],
   },
   {
     id: 'e_system',
     section: 'evidence',
     kind: 'behavior',
-    measuring: '常规型（C）：自发维护秩序的行为',
-    prompt: '你自己主动维护过一套长期使用的记录系统吗？（记账、库存、待办、归档、表格）',
+    measuring: '常规型（C）：自发维护秩序、扛得住不能出错的事务',
+    prompt: '你自己主动维护过一套长期使用的记录系统，或者坚持做过一件错一点就得重来的精确活儿？（记账、库存、待办、归档、实验记录、校对）',
     options: [
-      { id: 'real', label: '有，用了一年以上，而且它救过我', delta: { interests: { C: 0.95 }, tolerance: { quantitative: 0.7 } } },
+      { id: 'real', label: '有，用了一年以上，而且它救过我；对上的那一刻我是舒服的', delta: { interests: { C: 0.95 }, tolerance: { quantitative: 0.7 } } },
       { id: 'some', label: '记过一阵，后来断了', delta: { interests: { C: 0.55 } } },
       { id: 'tried', label: '试过很多方法，都坚持不下来', delta: { interests: { C: 0.25 } } },
       { id: 'chaos', label: '我生活很混乱，也觉得无所谓', delta: { interests: { C: 0.05 }, tolerance: { quantitative: 0.2 } } },
@@ -250,19 +250,6 @@ export const ITEMS: Item[] = [
     ],
   },
   {
-    id: 'e_alone',
-    section: 'evidence',
-    kind: 'behavior',
-    measuring: '独处深耕的实际耐受',
-    prompt: '一个人连续做同一件事 6 小时，中间不找人说话，你的实际体验是？',
-    options: [
-      { id: 'good', label: '经常这样，而且我很享受', delta: { solitudeVsPeople: -0.8, interests: { I: 0.6 } } },
-      { id: 'ok', label: '偶尔可以，做完挺满足', delta: { solitudeVsPeople: -0.4 } },
-      { id: 'hard', label: '很难，中途会想找人说几句', delta: { solitudeVsPeople: 0.2 } },
-      { id: 'miserable', label: '做不到，我会非常难受', delta: { solitudeVsPeople: 0.8, interests: { S: 0.6, E: 0.5 } } },
-    ],
-  },
-  {
     id: 'e_emotion',
     section: 'evidence',
     kind: 'behavior',
@@ -274,19 +261,6 @@ export const ITEMS: Item[] = [
       { id: 'help_but_tired', label: '会认真帮，但之后我很累，需要恢复', delta: { interests: { S: 0.7 }, tolerance: { interpersonal: 0.55 } } },
       { id: 'distract', label: '听着听着就想走神或找借口离开', delta: { interests: { S: 0.25 }, tolerance: { interpersonal: 0.25 } } },
       { id: 'irritated', label: '我会烦，觉得这是对方的问题', delta: { interests: { S: 0.05 }, tolerance: { interpersonal: 0.1 } } },
-    ],
-  },
-  {
-    id: 'e_precise',
-    section: 'evidence',
-    kind: 'behavior',
-    measuring: '对「不能出错」的长期事务的耐受',
-    prompt: '有没有一件要求长期精确、错一点就得重来的事，你坚持做过？（财务、代码、实验记录、排版、校对）',
-    options: [
-      { id: 'yes', label: '有，而且我做的时候是享受那种对上的感觉的', delta: { interests: { C: 0.85 }, tolerance: { quantitative: 0.8 } } },
-      { id: 'did', label: '做过，谈不上喜欢但没出错', delta: { interests: { C: 0.6 } } },
-      { id: 'bad', label: '做过，经常出错，我很烦这个', delta: { interests: { C: 0.15 }, tolerance: { quantitative: 0.3 } } },
-      { id: 'no', label: '没做过这类事', delta: { interests: { C: 0.35 } } },
     ],
   },
   {
@@ -334,6 +308,20 @@ export const ITEMS: Item[] = [
     ],
   },
   {
+    id: 't_formula',
+    section: 'tolerance',
+    kind: 'behavior',
+    measuring: '数学课程的真实成绩单',
+    prompt: '一门课每周四次推导课、作业二十道计算题、期末一张卷子定成绩——你高中里最像它的那门课，最后怎么样？',
+    help: '大学里这门课不会只有一门，而且它决定你能不能进保研和考研的分数线。',
+    options: [
+      { id: 'often', label: '那就是我的优势科目，我做得比多数人快', delta: { tolerance: { math: 0.95 } } },
+      { id: 'once', label: '一直中游，吃力但每次都过了', delta: { tolerance: { math: 0.65 } } },
+      { id: 'give_up', label: '作业应付过，靠别科拉分才没被拖死', delta: { tolerance: { math: 0.3 } } },
+      { id: 'never', label: '直接躺平，那门课我几乎是最低的一档', delta: { tolerance: { math: 0.1 } } },
+    ],
+  },
+  {
     id: 't_proof',
     section: 'tolerance',
     kind: 'behavior',
@@ -358,6 +346,20 @@ export const ITEMS: Item[] = [
       { id: 'once_hard', label: '为了考试硬背过，很痛苦但我扛下来了', delta: { tolerance: { memorization: 0.6 } } },
       { id: 'short', label: '只能背短时间的量，长期记不住', delta: { tolerance: { memorization: 0.3 } } },
       { id: 'no', label: '完全不行，我一背就忘', delta: { tolerance: { memorization: 0.08 } } },
+    ],
+  },
+  {
+    id: 't_cram',
+    section: 'tolerance',
+    kind: 'behavior',
+    measuring: '反复回看旧内容的耐受',
+    prompt: '背过的东西第二天忘了一半，得从头再滚一遍——这种循环你实际经历过几次，结果如何？',
+    help: '文科法条、医学的书、语言的词汇都是滚第二遍第三遍，一遍过的人极少。',
+    options: [
+      { id: 'twice', label: '滚过三轮以上，最后记住了，我知道怎么让自己记住', delta: { tolerance: { memorization: 0.95 } } },
+      { id: 'cram_ok', label: '考前滚过两遍，能及格，考完就忘', delta: { tolerance: { memorization: 0.6 } } },
+      { id: 'cram_fail', label: '滚过，但越滚越乱，最后还是没记住', delta: { tolerance: { memorization: 0.3 } } },
+      { id: 'avoid', label: '从没滚过第二遍，我受不了这种重复', delta: { tolerance: { memorization: 0.12 } } },
     ],
   },
   {
@@ -420,10 +422,10 @@ export const ITEMS: Item[] = [
     measuring: '每天高频面对陌生人',
     prompt: '连续每一天、一天几十次地面对陌生人的请求或情绪（门诊、柜台、课堂、客户会议），你的判断是？',
     options: [
-      { id: 'energize', label: '我可以，见人让我更有劲', delta: { tolerance: { interpersonal: 0.95 }, solitudeVsPeople: 0.8 } },
-      { id: 'manageable', label: '能做到，但每天下班需要独处恢复', delta: { tolerance: { interpersonal: 0.6 }, solitudeVsPeople: 0.1 } },
-      { id: 'drain', label: '少量可以，多了我会崩溃', delta: { tolerance: { interpersonal: 0.3 }, solitudeVsPeople: -0.5 } },
-      { id: 'impossible', label: '绝对不行，我要的是不需要一直说话的工作', delta: { tolerance: { interpersonal: 0.05 }, solitudeVsPeople: -0.9 } },
+      { id: 'energize', label: '我可以，见人让我更有劲', delta: { tolerance: { interpersonal: 0.95 } } },
+      { id: 'manageable', label: '能做到，但每天下班需要独处恢复', delta: { tolerance: { interpersonal: 0.6 } } },
+      { id: 'drain', label: '少量可以，多了我会崩溃', delta: { tolerance: { interpersonal: 0.3 } } },
+      { id: 'impossible', label: '绝对不行，我要的是不需要一直说话的工作', delta: { tolerance: { interpersonal: 0.05 } } },
     ],
   },
   {
@@ -433,23 +435,24 @@ export const ITEMS: Item[] = [
     measuring: '现场、外勤与非常规环境',
     prompt: '以下哪些工作环境你能常年接受？（这是长期状态，不是一次实习）',
     options: [
-      { id: 'site', label: '工地、厂房、矿山、田间、野外勘测，风吹日晒', delta: { tolerance: { fieldwork: 0.95, physical: 0.85 }, interests: { R: 0.7 } } },
+      { id: 'site', label: '工地、厂房、矿山、田间、野外勘测，风吹日晒', delta: { tolerance: { fieldwork: 0.95 }, interests: { R: 0.7 } } },
       { id: 'travel', label: '频繁出差跑客户或跑项目现场', delta: { tolerance: { fieldwork: 0.75 }, interests: { E: 0.6 } } },
       { id: 'hospital', label: '医院、学校、机关等固定场所，但要轮班或坐不住', delta: { tolerance: { fieldwork: 0.5, interpersonal: 0.6 } } },
-      { id: 'office', label: '都要在室内，最好固定工位固定时间', delta: { tolerance: { fieldwork: 0.1, physical: 0.1 } } },
+      { id: 'office', label: '都要在室内，最好固定工位固定时间', delta: { tolerance: { fieldwork: 0.1 } } },
     ],
   },
   {
-    id: 't_deadline',
+    id: 't_physical',
     section: 'tolerance',
     kind: 'behavior',
-    measuring: '高压截止与不确定性',
-    prompt: '连续几个学期， deadline 压着、没有标准答案、要自己定义问题 ——',
+    measuring: '体力耐受',
+    prompt: '连续几天做体力活：搬仪器、站着测量、下田、跟着手术台站到腿没知觉——',
+    help: '土木、测绘、地质、农学、海洋、护理和外科都是这种日常，不是偶尔一次。',
     options: [
-      { id: 'thrive', label: '这种状态让我兴奋', delta: { convergentVsOpen: 0.8, grit: 0.7 } },
-      { id: 'survive', label: '能扛，但很消耗', delta: { convergentVsOpen: 0.3 } },
-      { id: 'anxious', label: '我会焦虑到睡不着', delta: { convergentVsOpen: -0.6 } },
-      { id: 'avoid', label: '我会拖延到最后一刻再随便交', delta: { convergentVsOpen: -0.8, grit: 0.25 } },
+      { id: 'like', label: '这种活我愿意天天干，身体累了心不累', delta: { tolerance: { physical: 0.9 }, interests: { R: 0.7 } } },
+      { id: 'endure', label: '能扛，需要钱或者需要学分的时候我会扛', delta: { tolerance: { physical: 0.6 } } },
+      { id: 'break', label: '干一两天还行，长期我会垮', delta: { tolerance: { physical: 0.25 } } },
+      { id: 'no', label: '完全不考虑，我体力差，也不想靠体力吃饭', delta: { tolerance: { physical: 0.08 } } },
     ],
   },
 
@@ -518,19 +521,19 @@ export const ITEMS: Item[] = [
     measuring: '深度专精还是跨界综合',
     prompt: '十年后你更可能因为什么被需要？',
     options: [
-      { id: 'deep', label: '在很窄的一个问题上比 99% 的人懂', delta: { theoryVsApplied: 0.5, interests: { I: 0.8 }, solitudeVsPeople: -0.4 } },
-      { id: 'broad', label: '懂好几块，能把不同的人和资源接到一起', delta: { interests: { E: 0.8, S: 0.6 }, solitudeVsPeople: 0.6 } },
+      { id: 'deep', label: '在很窄的一个问题上比 99% 的人懂', delta: { theoryVsApplied: 0.5, interests: { I: 0.8 } } },
+      { id: 'broad', label: '懂好几块，能把不同的人和资源接到一起', delta: { interests: { E: 0.8, S: 0.6 } } },
     ],
   },
   {
     id: 'v_solved',
     section: 'tradeoff',
     kind: 'forced',
-    measuring: '问题结构偏好',
+    measuring: '兴趣：在规范内做对，还是自己定义问题',
     prompt: '你更愿意每天处理哪种问题？',
     options: [
-      { id: 'defined', label: '有明确规范和正确答案，把它做到又快又不出错', delta: { convergentVsOpen: -0.9, interests: { C: 0.85 } } },
-      { id: 'open', label: '问题本身要我自己定义，做成什么样没人能保证', delta: { convergentVsOpen: 0.9, interests: { A: 0.7, I: 0.7 } } },
+      { id: 'defined', label: '有明确规范和正确答案，把它做到又快又不出错', delta: { interests: { C: 0.85 } } },
+      { id: 'open', label: '问题本身要我自己定义，做成什么样没人能保证', delta: { interests: { A: 0.7, I: 0.7 } } },
     ],
   },
   {

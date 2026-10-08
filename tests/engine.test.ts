@@ -97,8 +97,8 @@ describe('非对称负载惩罚（引擎的核心主张）', () => {
     // 强 I 兴趣 + 明确受不了数学与抽象
     const { result } = run([
       ['e_why', 'recent'],
-      ['e_precise', 'yes'],
       ['t_math', 'hate'],
+      ['t_formula', 'never'],
       ['t_proof', 'shutdown'],
       ['v_applied', 'use'],
     ]);
@@ -139,6 +139,7 @@ describe('非对称负载惩罚（引擎的核心主张）', () => {
     delete answers.t_visual;
     delete answers.e_show;
     delete answers.t_math;
+    delete answers.t_formula;
     const result = recommend(assess(answers), { majors: ALL_MAJORS });
     expect(result.confidence.level).not.toBe('high');
     expect(result.confidence.gaps.length).toBeGreaterThan(0);
@@ -166,12 +167,14 @@ describe('多样性重排', () => {
     const { result } = run([
       ['e_fix', 'many'],
       ['e_code', 'own'],
-      ['e_precise', 'yes'],
       ['e_grit', 'several'],
       ['t_math', 'hard'],
+      ['t_formula', 'often'],
       ['t_memorize', 'done'],
+      ['t_cram', 'twice'],
       ['t_lab', 'build'],
       ['t_field', 'site'],
+      ['t_physical', 'like'],
       ['v_depth', 'broad'],
       ['v_applied', 'use'],
       ['v_family', 'obey'],
@@ -221,17 +224,18 @@ describe('理论胃口与落地胃口', () => {
         ['e_fix', 'many'],
         ['e_why', 'recent'],
         ['e_system', 'real'],
-        ['e_precise', 'yes'],
         ['e_code', 'own'],
         ['e_grit', 'several'],
         ['e_emotion', 'distract'],
         ['t_math', 'hard'],
+        ['t_formula', 'often'],
         ['t_proof', 'enjoy'],
         ['t_memorize', 'done'],
+        ['t_cram', 'twice'],
         ['t_lab', 'wet'],
         ['t_write', 'can'],
         ['t_data', 'love'],
-        ['t_deadline', 'thrive'],
+        ['t_physical', 'like'],
         ['v_depth', 'deep'],
         ['v_solved', 'open'],
         ['v_applied', 'why'],
@@ -276,10 +280,10 @@ describe('不确定时必须降级，而不是硬给一份好看的排序', () =
 
   it('自相矛盾的回答会被检出并降低置信度', () => {
     const { assessment, result } = run([
-      ['e_alone', 'good'],
-      ['t_people_daily', 'energize'],
-      ['e_emotion', 'hold'],
       ['t_math', 'hard'],
+      ['t_formula', 'never'],
+      ['t_people_daily', 'impossible'],
+      ['e_emotion', 'hold'],
       ['t_proof', 'shutdown'],
     ]);
     expect(assessment.diagnostics.contradictions.length).toBeGreaterThan(0);
@@ -293,9 +297,10 @@ describe('不确定时必须降级，而不是硬给一份好看的排序', () =
    */
   it('面向用户的文案里不出现内部题号与裸数值', () => {
     const { result } = run([
-      ['e_alone', 'good'],
-      ['t_people_daily', 'energize'],
       ['t_math', 'hard'],
+      ['t_formula', 'never'],
+      ['t_people_daily', 'impossible'],
+      ['e_emotion', 'hold'],
       ['t_proof', 'shutdown'],
     ]);
     const userFacing = [
@@ -304,7 +309,7 @@ describe('不确定时必须降级，而不是硬给一份好看的排序', () =
       ...result.recommendations.flatMap((r) => [...r.costs, ...r.matchedPoints, ...r.conditionsToAccept]),
     ].join('\n');
 
-    for (const id of ['v_family', 'v_prestige_free', 't_people_daily', 'e_alone', 't_proof', 'f_subject_confirmed']) {
+    for (const id of ['v_family', 'v_prestige_free', 't_people_daily', 't_formula', 't_cram', 't_physical', 't_proof', 'f_subject_confirmed']) {
       expect(userFacing, `文案泄漏了题号 ${id}`).not.toContain(id);
     }
     for (const key of ['value.', 'axis.', 'tolerance.', 'interest.']) {

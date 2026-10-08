@@ -108,7 +108,7 @@ describe('未作答不参与罚分', () => {
 
 describe('排除原因的呈现', () => {
   it('用户主动排除的门类不算「被条件挡掉的机会」', () => {
-    const a = assess(neutralAnswers([['f_exclude', ['science']], ['e_why', 'recent'], ['e_precise', 'yes']]));
+    const a = assess(neutralAnswers([['f_exclude', ['science']], ['e_why', 'recent']]));
     const result = recommend(a, { majors: ALL_MAJORS });
     const scienceIds = new Set(ALL_MAJORS.filter((m) => m.category === 'science').map((m) => m.id));
     for (const e of result.excludedButRelevant) {
@@ -123,7 +123,6 @@ describe('排除原因的呈现', () => {
         ['f_subjects', ['physics', 'chemistry']],
         ['f_postgrad', 'no'],
         ['e_why', 'recent'],
-        ['e_precise', 'yes'],
       ]),
     );
     const result = recommend(a, { majors: ALL_MAJORS });

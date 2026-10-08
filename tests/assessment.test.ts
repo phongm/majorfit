@@ -14,7 +14,7 @@ function lookupSample(a: AssessmentOutput, entry: string) {
   if (group === 'tolerance') return a.measurement.tolerance[dim as keyof typeof a.measurement.tolerance];
   if (group === 'value') return a.measurement.values[dim as keyof typeof a.measurement.values];
   if (group === 'axis') {
-    return a.measurement[dim as 'theoryVsApplied' | 'convergentVsOpen' | 'solitudeVsPeople' | 'grit'];
+    return a.measurement[dim as 'theoryVsApplied' | 'grit'];
   }
   throw new Error(`未知的 thin 分组：${entry}`);
 }
@@ -157,10 +157,26 @@ describe('观测与诊断', () => {
     expect(a.diagnostics.unanswered).toContain('f_years');
   });
 
+  /**
+   * forced 题既不算自报矛盾（那是同一情景里的相对取舍），也不许因为它站在极值上
+   * 就把整个维度跳过：这份答卷里 v_applied=-0.9 与 v_depth=+0.5 都占着端点，
+   * 若先取极值再排除 forced，e_why 与 t_proof 这对真矛盾永远报不出来。
+   */
   it('同一维度的两个观测差距过大时判为矛盾，且不依赖人工配对表', () => {
-    const a = assess(neutralAnswers([['t_math', 'hard'], ['e_alone', 'good'], ['t_people_daily', 'energize']]));
-    const dims = a.diagnostics.contradictions.map((c) => c.dimension);
-    expect(dims.some((d) => d.startsWith('axis.solitudeVsPeople'))).toBe(true);
+    const a = assess(
+      neutralAnswers([
+        ['e_why', 'recent'],
+        ['t_proof', 'shutdown'],
+        ['e_emotion', 'hold'],
+        ['t_people_daily', 'impossible'],
+      ]),
+    );
+    const pairs = new Map(
+      a.diagnostics.contradictions.map((c) => [c.dimension, c.observations.map((o) => o.item).sort()]),
+    );
+    // 有符号轴走 SPAN_SIGNED、0..1 维度走 SPAN_01，两条阈值都得真的跑到
+    expect(pairs.get('axis.theoryVsApplied')).toEqual(['e_why', 't_proof']);
+    expect(pairs.get('tolerance.interpersonal')).toEqual(['e_emotion', 't_people_daily']);
   });
 
   it('全部按同一方向作答时不应产生矛盾', () => {

@@ -19,8 +19,6 @@ export interface ProfileDelta {
   interests?: Partial<RIASEC>;
   tolerance?: Partial<Record<LoadDimension, number>>;
   theoryVsApplied?: number;
-  convergentVsOpen?: number;
-  solitudeVsPeople?: number;
   grit?: number;
   values?: Partial<{
     stability: number;

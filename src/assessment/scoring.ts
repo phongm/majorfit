@@ -33,8 +33,6 @@ export interface Measurement {
   interests: Record<keyof RIASEC, DimensionSample | null>;
   tolerance: Record<LoadDimension, DimensionSample | null>;
   theoryVsApplied: DimensionSample | null;
-  convergentVsOpen: DimensionSample | null;
-  solitudeVsPeople: DimensionSample | null;
   grit: DimensionSample | null;
   values: Record<keyof UserProfile['values'], DimensionSample | null>;
 }
@@ -64,11 +62,11 @@ export interface AssessmentOutput {
 
 const INTEREST_KEYS: (keyof RIASEC)[] = ['R', 'I', 'A', 'S', 'E', 'C'];
 const VALUE_KEYS = ['stability', 'income', 'autonomy', 'meaning', 'prestige'] as const;
-const SIGNED_KEYS = ['theoryVsApplied', 'convergentVsOpen', 'solitudeVsPeople'] as const;
 
 /** 同维度上两个观测差距超过此值即判为自报矛盾 */
 const SPAN_01 = 0.72;
-const SPAN_SIGNED = 1.3;
+/** 有符号轴取 1.2 而不是 1.3：题库里唯一成对的反向答案是 ±0.6 对 ±0.7，差值恰好 1.3，写在边界上会被浮点误差判成不矛盾 */
+const SPAN_SIGNED = 1.2;
 
 /**
  * 约束写入优先级：直接自述（facts 段）高于情景推断（tradeoff 段）。
@@ -165,10 +163,7 @@ export function assess(answers: Answers): AssessmentOutput {
           if (v !== undefined) observe(values, k, v, item.id);
         }
       }
-      for (const k of SIGNED_KEYS) {
-        const v = delta[k];
-        if (v !== undefined) observe(axes, k, v, item.id);
-      }
+      if (delta.theoryVsApplied !== undefined) observe(axes, 'theoryVsApplied', delta.theoryVsApplied, item.id);
       if (delta.grit !== undefined) observe(axes, 'grit', delta.grit, item.id);
 
       const c = delta.constraints;
@@ -234,8 +229,6 @@ export function assess(answers: Answers): AssessmentOutput {
     interests: INTEREST_KEYS.filter((k) => !sample(iMeas, k)),
     values: VALUE_KEYS.filter((k) => !sample(vMeas, k)),
     theoryVsApplied: !sample(aMeas, 'theoryVsApplied'),
-    convergentVsOpen: !sample(aMeas, 'convergentVsOpen'),
-    solitudeVsPeople: !sample(aMeas, 'solitudeVsPeople'),
     grit: !gritSample,
     constraints: [...unmeasuredConstraints],
   };
@@ -244,8 +237,6 @@ export function assess(answers: Answers): AssessmentOutput {
     interests: interestsVec,
     tolerance: toleranceVec,
     theoryVsApplied: Math.max(-1, Math.min(1, axis('theoryVsApplied'))),
-    convergentVsOpen: Math.max(-1, Math.min(1, axis('convergentVsOpen'))),
-    solitudeVsPeople: Math.max(-1, Math.min(1, axis('solitudeVsPeople'))),
     grit: gritSample ? clamp01(gritSample.value) : 0.5,
     values: valuesVec,
     constraints: {
@@ -286,8 +277,6 @@ export function assess(answers: Answers): AssessmentOutput {
     tolerance: pickKeys(tMeas, LOAD_DIMENSIONS),
     values: pickKeys(vMeas, VALUE_KEYS),
     theoryVsApplied: sample(aMeas, 'theoryVsApplied'),
-    convergentVsOpen: sample(aMeas, 'convergentVsOpen'),
-    solitudeVsPeople: sample(aMeas, 'solitudeVsPeople'),
     grit: gritSample,
   };
 
@@ -318,8 +307,6 @@ const DIMENSION_LABELS: Record<string, string> = {
   'value.meaning': '要这件事有意义',
   'value.prestige': '要在乎别人怎么看',
   'axis.theoryVsApplied': '偏理论还是偏落地',
-  'axis.convergentVsOpen': '要标准答案还是自己定义问题',
-  'axis.solitudeVsPeople': '一个人钻进去还是整天面对人',
   'constraint.postgrad': '读研意愿与培养周期',
   'constraint.subjects': '选科组合是否核实过',
 };
@@ -351,14 +338,17 @@ const isForcedChoice = (itemId: string) => ITEMS_BY_ID.get(itemId)?.kind === 'fo
 function detectSpanContradictions(group: string, store: Store, span: number): Contradiction[] {
   const out: Contradiction[] = [];
   for (const [dim, obs] of store) {
-    if (obs.length < 2) continue;
-    const sorted = [...obs].sort((a, b) => a.value - b.value);
+    // 先把 forced 题摘掉再取极差：它只是同一情景里的相对取舍，不能当自报矛盾。
+    // 但也不能让它占住极值 —— 一旦它站在端点上，整维度被跳过，
+    // 「主动深挖过原理」(+0.6) 对上「看两行推导就关」(-0.7) 这种真矛盾就被藏掉了。
+    const comparable = obs.filter((o) => !isForcedChoice(o.item));
+    if (comparable.length < 2) continue;
+    const sorted = [...comparable].sort((a, b) => a.value - b.value);
     const lo = sorted[0]!;
     const hi = sorted[sorted.length - 1]!;
     if (hi.value - lo.value < span) continue;
     // 两个观测来自同一题的不同选项时不算矛盾（那是多选的正常分布）
     if (lo.item === hi.item) continue;
-    if (isForcedChoice(lo.item) || isForcedChoice(hi.item)) continue;
     const dimension = `${group}.${dim}`;
     out.push({
       dimension,

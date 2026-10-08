@@ -400,8 +400,6 @@ export interface UnmeasuredFlags {
   interests: (keyof RIASEC)[];
   values: (keyof ValuePriorities)[];
   theoryVsApplied: boolean;
-  convergentVsOpen: boolean;
-  solitudeVsPeople: boolean;
   grit: boolean;
   constraints: MeasurableConstraint[];
 }
@@ -412,10 +410,6 @@ export interface UserProfile {
   tolerance: ToleranceVector;
   /** -1 偏向具体应用 / +1 偏向抽象理论 */
   theoryVsApplied: number;
-  /** -1 偏向有唯一解 / +1 偏向开放式探索 */
-  convergentVsOpen: number;
-  /** -1 独处深耕 / +1 高频人际 */
-  solitudeVsPeople: number;
   /** 学习耐力：能否维持长周期高强度投入 0..1 */
   grit: number;
   values: ValuePriorities;

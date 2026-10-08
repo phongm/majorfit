@@ -36,7 +36,7 @@ const GAP_QUESTION: Partial<Record<LoadDimension, string>> = {
   quantitative: 't_data',
   interpersonal: 't_people_daily',
   fieldwork: 't_field',
-  physical: 't_field',
+  physical: 't_physical',
 };
 
 export function recommend(
@@ -194,7 +194,7 @@ function buildConfidence(
     (HARD_CONSTRAINTS as readonly string[]).includes(k),
   ).length;
 
-  // 每个维度只有一次观测（diagnostics.thin）是这套题库的粒度，不是某个用户的缺陷，
+  // 有的维度只有一次观测（diagnostics.thin）是这套题库的粒度，不是某个用户的缺陷，
   // 所以它不进分档、也不许被写进「有多次观测支撑」这种没做过的校验里
   const reasons: string[] = [];
   if (diagnostics.completion < 0.8) reasons.push(`只答了 ${Math.round(diagnostics.completion * 100)}% 的题`);
@@ -211,7 +211,7 @@ function buildConfidence(
   else if (reasons.length) level = 'medium';
 
   /**
-   * 文案只描述真的做了的校验。数学、编程、记忆量这些维度结构上只由一道题测到，
+   * 文案只描述真的做了的校验。多数负载维度只由一两道题测到，少于一题的就是没测到，
    * 所以任何版本都不许说「每个维度都有多次观测支撑」。
    * 同理：gaps 为空时不许说「把下面的追问补完」——那会让用户盯着一个空区块找东西。
    */
