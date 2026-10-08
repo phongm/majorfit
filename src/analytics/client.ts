@@ -16,7 +16,11 @@ export function sessionId(): string {
   }
 }
 
-const ENDPOINT = import.meta.env.VITE_STATS_ENDPOINT ?? '/api/events';
+const RUNTIME_ENDPOINT =
+  typeof window !== 'undefined' &&
+  (window as unknown as { __MAJORFIT_CONFIG__?: { statsEndpoint?: string } })
+    .__MAJORFIT_CONFIG__?.statsEndpoint;
+const ENDPOINT = RUNTIME_ENDPOINT || import.meta.env.VITE_STATS_ENDPOINT || '/api/events';
 const ENABLED = import.meta.env.VITE_STATS_DISABLED !== '1';
 
 /**

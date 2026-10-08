@@ -1,5 +1,12 @@
 # 部署方案
 
+本项目提供两种部署方式：
+
+- **方案一：自有服务器**（下文一至九节）—— Nginx + Node.js，适合有备案域名、需要完全控制数据的场景
+- **方案二：GitHub Pages + Cloudflare Worker**（文末新增）—— 零服务器成本，适合快速上线、日活几千量级
+
+---
+
 目标机器：你自己的服务器（域名已备案）+ 腾讯云对象存储（COS）做日志备份。
 
 ## 一、要不要数据库：现在不要
@@ -124,3 +131,148 @@ curl -s "https://你的域名/api/stats?token=你的口令&days=14"
 
 - 网站页脚是否需要挂隐私政策与备案编号（面向中国大陆公开服务通常要）；
 - `comments` 里用户可能自行写入个人信息，日志备份到 COS 后属于你的存储范围，需要设定保留期限并支持删除请求。
+
+---
+
+## 方案二：GitHub Pages + Cloudflare Worker（零服务器）
+
+完全免费（在额度内），无需维护服务器。
+
+```
+GitHub Pages (静态站点)  ──POST https://worker/api/events──►  Cloudflare Worker
+         │                                                          │
+         └──GET https://worker/api/stats?token=…───────────────────┘
+                                                                  ▼
+                                                         Cloudflare D1 (SQLite)
+```
+
+### 架构说明
+
+| 组件 | 服务 | 免费额度 |
+|------|------|----------|
+| 前端托管 | GitHub Pages | 无限（公开仓库） |
+| 统计服务 | Cloudflare Workers | 10 万次请求/天 |
+| 数据存储 | Cloudflare D1 (SQLite) | 5GB 存储、50 亿行读取/天 |
+
+日活几千完全够用。
+
+### 前置条件
+
+1. 一个 GitHub 账号
+2. 一个 Cloudflare 账号（免费注册）
+3. 安装 [wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)：`npm install -g wrangler`
+4. 登录 Cloudflare：`wrangler login`
+
+### 步骤一：创建 D1 数据库
+
+```bash
+cd worker
+wrangler d1 create majorfit-events
+```
+
+输出会显示一个 `database_id`，把它填入 `worker/wrangler.toml`：
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "majorfit-events"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # 填入这里
+```
+
+然后初始化表结构：
+
+```bash
+wrangler d1 execute majorfit-events --file=schema.sql
+```
+
+### 步骤二：设置 STATS_TOKEN
+
+生成一个随机口令：
+
+```bash
+openssl rand -hex 24
+```
+
+设置为 Worker 的 secret：
+
+```bash
+echo "你生成的口令" | wrangler secret put STATS_TOKEN
+```
+
+### 步骤三：部署 Worker
+
+```bash
+cd worker
+wrangler deploy
+```
+
+部署成功后会显示 Worker URL，格式如：
+`https://majorfit-stats.your-subdomain.workers.dev`
+
+测试健康检查：
+
+```bash
+curl https://majorfit-stats.your-subdomain.workers.dev/api/health
+# 应返回 {"ok":true}
+```
+
+测试统计查询：
+
+```bash
+curl "https://majorfit-stats.your-subdomain.workers.dev/api/stats?token=你的口令&days=7"
+```
+
+### 步骤四：配置前端 API 地址
+
+编辑 `public/config.js`，填入 Worker URL：
+
+```javascript
+window.__MAJORFIT_CONFIG__ = {
+  statsEndpoint: 'https://majorfit-stats.your-subdomain.workers.dev/api/events',
+};
+```
+
+### 步骤五：启用 GitHub Pages
+
+1. 进入仓库 Settings → Pages
+2. Source 选择 **GitHub Actions**
+3. 如果使用 GitHub 默认域名（`username.github.io/majorfit`），需要在仓库 Settings → Secrets and variables → Actions → Variables 中添加：
+   - `VITE_BASE_PATH` = `/majorfit/`（替换为你的仓库名）
+4. 如果使用自定义域名，保持 `VITE_BASE_PATH` = `/` 或不设置
+
+### 步骤六：配置 GitHub Secrets（可选：自动部署 Worker）
+
+如果需要 CI 自动部署 Worker，在仓库 Settings → Secrets → Actions 中添加：
+
+| Secret | 说明 |
+|--------|------|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token，需要 `Workers Scripts:Edit` 和 `D1:Edit` 权限 |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID，在控制台首页右侧 |
+| `STATS_TOKEN` | 统计查询口令 |
+
+### 部署流程
+
+推送代码到 main 分支后：
+
+1. **前端**：GitHub Actions 自动构建并部署到 GitHub Pages
+2. **Worker**：如果 `worker/` 目录有变更，自动部署到 Cloudflare
+
+手动触发 Worker 部署：Actions → Deploy Cloudflare Worker → Run workflow
+
+### 自定义域名（可选）
+
+**GitHub Pages**：在仓库 Settings → Pages → Custom domain 填入你的域名，然后按提示配置 DNS。
+
+**Cloudflare Worker**：在 Cloudflare 控制台 → Workers → 你的 Worker → Triggers → Add，绑定自定义路由或域名。
+
+### 与方案一的对比
+
+| | 方案一：自有服务器 | 方案二：Serverless |
+|---|---|---|
+| 成本 | VPS ~30-50 元/月 | 免费（额度内） |
+| 运维 | 需要管理服务器、Nginx、systemd | 零运维 |
+| 域名备案 | 需要（大陆服务） | 不需要（GitHub/Cloudflare 境外） |
+| 数据控制 | 完全控制，日志在本地 | 数据在 Cloudflare |
+| 访问速度 | 取决于服务器位置 | GitHub Pages 在境外，大陆访问可能慢 |
+| 扩展性 | 受限于单机配置 | 自动扩展 |
+| 适用场景 | 面向大陆用户、需要备案 | 快速上线、海外用户、内部使用 |
