@@ -282,7 +282,11 @@ base path 规则（`vite.config.ts` 读 `VITE_BASE_PATH`，缺省 `/`）：
 2. **Worker**：不会自动部署，改完在 `worker/` 目录跑 `wrangler deploy`
 3. **GitHub Actions**：只跑 typecheck、测试、构建（`.github/workflows/ci.yml`），不发布任何东西
 
-> `gh-pages` 分支还留在远端，带着 GitHub Pages 时代的 `CNAME` 文件。它已经不是发布路径，可以删。
+> **GitHub Pages 已停用**：构建方式是 `workflow`，而仓库里没有发布 workflow，所以推 main 不会再触发 Pages 发布。
+> 前端只由 Cloudflare Pages 从 `main` 构建。这条写在这里是为了防止有人误把 GitHub Pages 重新打开——
+> 它与本方案共存会让同一个站在两处构建，而 `main` 根目录里的 `index.html` 是 Vite 开发入口，直接发布出去是白屏。
+> 老的 `github.io` 地址上残留的页面不会自己消失，需要在仓库 Settings → Pages 里 Unpublish（REST API 删不掉，GitHub 返回 422）。
+> 原来的 `gh-pages` 分支带着 GitHub Pages 时代的 `CNAME`，已经删除。
 
 ### 自定义域名（可选）
 
