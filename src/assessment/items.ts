@@ -4,7 +4,7 @@ import type { Answers } from './scoring';
 /**
  * 题库。tolerance / interests 的取值一律是「该选项对应的绝对水平」，
  * 同一维度被多题测到时由 scoring 取平均并记录样本数，
- * 样本数不足 2 的维度会被标记为低置信，而不是假装测准了。
+ * 只被一题测到的维度记进 diagnostics.thin 供排查，不参与排序与置信度分档。
  */
 export const ITEMS: Item[] = [
   // ────────────────────────────── facts ──────────────────────────────
@@ -313,7 +313,7 @@ export const ITEMS: Item[] = [
     kind: 'behavior',
     measuring: '数学课程的真实成绩单',
     prompt: '一门课每周四次推导课、作业二十道计算题、期末一张卷子定成绩——你高中里最像它的那门课，最后怎么样？',
-    help: '大学里这门课不会只有一门，而且它决定你能不能进保研和考研的分数线。',
+    help: '大学里这种课不止一门，而保研和考研的线都是从绩点上过的。',
     options: [
       { id: 'often', label: '那就是我的优势科目，我做得比多数人快', delta: { tolerance: { math: 0.95 } } },
       { id: 'once', label: '一直中游，吃力但每次都过了', delta: { tolerance: { math: 0.65 } } },

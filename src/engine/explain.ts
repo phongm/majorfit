@@ -11,6 +11,9 @@ import {
 } from '../domain/types';
 import type { Scored } from './rank';
 
+/** 夸与贬两句断言的都是「课压在原理上」这件事，所以必须共用同一条分界线 */
+const THEORY_HEAVY_LOAD = 0.7;
+
 const TREND_LABEL: Record<MarketTrend, string> = {
   rising: '需求在上升',
   stable: '需求平稳',
@@ -68,7 +71,7 @@ export function buildNarrative(s: Scored, profile: UserProfile): Narrative {
     matched.push('你不想读研，而它本科毕业就能直接对口就业');
   }
   /** 胃口项生效的正面一侧：课程真的压在原理上，而这个人就是要原理 */
-  if (!profile.unmeasured.theoryVsApplied && profile.theoryVsApplied >= 0.5 && m.load.abstraction >= 0.7) {
+  if (!profile.unmeasured.theoryVsApplied && profile.theoryVsApplied >= 0.5 && m.load.abstraction >= THEORY_HEAVY_LOAD) {
     matched.push('它的核心课真的停在推导和证明上，而你要的就是这个');
   }
   if (wants(profile, 'stability', 0.7) && m.civilServiceFit >= 0.7) {
@@ -97,9 +100,13 @@ export function buildNarrative(s: Scored, profile: UserProfile): Narrative {
    * 胃口错配的负面一侧。抽象理论的耐受度已经出现在上面的负载缺口里时不再重复一次，
    * 否则同一张卡片会连着两句「它太理论了」，一句说扛不住、一句说不要。
    */
-  if (s.breakdown.theorySide === 'starved') {
+  if (s.breakdown.theorySide === 'starved' && m.load.abstraction < THEORY_HEAVY_LOAD) {
     costs.push('它的课基本停在「会用就行」，不会带你往下追问为什么');
-  } else if (s.breakdown.theorySide === 'swamped' && !s.breakdown.loadGaps.some((g) => g.dim === 'abstraction')) {
+  } else if (
+    s.breakdown.theorySide === 'swamped' &&
+    m.load.abstraction >= THEORY_HEAVY_LOAD &&
+    !s.breakdown.loadGaps.some((g) => g.dim === 'abstraction')
+  ) {
     costs.push('它的核心课大量停在推导与证明上，而你要的是尽快拿它做出东西');
   }
   if (m.marketTrend === 'contracting' || m.marketTrend === 'cooling') {

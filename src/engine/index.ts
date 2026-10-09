@@ -146,7 +146,7 @@ function collectGaps(profile: UserProfile, recommendations: Recommendation[]): s
   if (profile.unmeasured.grit) gaps.push(`没答过长周期投入的经历。建议补答：${questionPrompt('e_grit')}`);
   /** 理论胃口现在直接参与排序，它没测到时这条规则等于没跑，得说而不是静默跳过 */
   if (profile.unmeasured.theoryVsApplied) {
-    gaps.push(`没测出你要的是原理还是落地，而这一项现在会影响排序。建议补答：${questionPrompt('v_applied')}`);
+    gaps.push(`没测出你要的是原理还是落地，而它决定整页推导的课对你是养料还是折磨。建议补答：${questionPrompt('v_applied')}`);
   }
   /**
    * 明确答了「没确认过」的人是**有作答**，不会进 unmeasured，所以也就不会出现在
@@ -194,8 +194,7 @@ function buildConfidence(
     (HARD_CONSTRAINTS as readonly string[]).includes(k),
   ).length;
 
-  // 有的维度只有一次观测（diagnostics.thin）是这套题库的粒度，不是某个用户的缺陷，
-  // 所以它不进分档、也不许被写进「有多次观测支撑」这种没做过的校验里
+  // thin（只被一题测到的维度）是这套题库的粒度，不是某个用户的缺陷，所以不进分档
   const reasons: string[] = [];
   if (diagnostics.completion < 0.8) reasons.push(`只答了 ${Math.round(diagnostics.completion * 100)}% 的题`);
   if (contradictions.length) reasons.push(`${contradictions.length} 处回答互相冲突`);

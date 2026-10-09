@@ -338,16 +338,16 @@ const isForcedChoice = (itemId: string) => ITEMS_BY_ID.get(itemId)?.kind === 'fo
 function detectSpanContradictions(group: string, store: Store, span: number): Contradiction[] {
   const out: Contradiction[] = [];
   for (const [dim, obs] of store) {
-    // 先把 forced 题摘掉再取极差：它只是同一情景里的相对取舍，不能当自报矛盾。
-    // 但也不能让它占住极值 —— 一旦它站在端点上，整维度被跳过，
-    // 「主动深挖过原理」(+0.6) 对上「看两行推导就关」(-0.7) 这种真矛盾就被藏掉了。
+    // forced 题先摘掉再取极差：它只是同一情景里的相对取舍，不能当自报矛盾；
+    // 但也不能让它占住端点 —— 一旦占住，整个维度被跳过，
+    // 「主动深挖过原理」(+0.6) 对上「看两行推导就关」(-0.7) 这种真矛盾就被藏掉了
     const comparable = obs.filter((o) => !isForcedChoice(o.item));
     if (comparable.length < 2) continue;
     const sorted = [...comparable].sort((a, b) => a.value - b.value);
     const lo = sorted[0]!;
     const hi = sorted[sorted.length - 1]!;
     if (hi.value - lo.value < span) continue;
-    // 两个观测来自同一题的不同选项时不算矛盾（那是多选的正常分布）
+    // 只比较来自不同题的两个观测，同一题内部的取值不构成自我冲突
     if (lo.item === hi.item) continue;
     const dimension = `${group}.${dim}`;
     out.push({

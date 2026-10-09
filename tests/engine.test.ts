@@ -677,6 +677,37 @@ describe('文案不许自相矛盾', () => {
     }
   });
 
+  /**
+   * 胃口那两句断言的都是课程形态：供给压在 0.7 以上的专业不能说「停在会用就行」，
+   * 供给低的也不能说「大量停在推导与证明上」。
+   */
+  it('胃口那两句不许在同一张卡片上互相打脸', () => {
+    const PRAISE = '它的核心课真的停在推导和证明上';
+    const STARVED = '它的课基本停在「会用就行」';
+    const SWAMPED = '它的核心课大量停在推导与证明上';
+    const cases: [string, [string, AnswerValue][]][] = [
+      ['要原理', [['e_why', 'recent'], ['t_proof', 'enjoy'], ['v_applied', 'why'], ['v_depth', 'deep'], ['f_postgrad', 'yes']]],
+      ['要落地', [['e_why', 'never'], ['t_proof', 'shutdown'], ['v_applied', 'use'], ['v_depth', 'broad'], ['t_math', 'hard'], ['f_postgrad', 'no']]],
+    ];
+    let praiseTotal = 0;
+    let appetiteCostTotal = 0;
+    for (const [who, overrides] of cases) {
+      const result = recommend(assess(neutralAnswers(overrides)), { majors: ALL_MAJORS, topN: 20 });
+      for (const r of result.recommendations) {
+        const heavy = r.major.load.abstraction >= 0.7;
+        const has = (s: string) => [...r.matchedPoints, ...r.costs].some((t) => t.includes(s));
+        expect(has(PRAISE) && has(STARVED), `${who}／${r.major.name}：既夸它压推导，又说它停在会用就行`).toBe(false);
+        if (has(STARVED)) expect(heavy, `${who}／${r.major.name}：课程真压在推导上`).toBe(false);
+        if (has(SWAMPED)) expect(heavy, `${who}／${r.major.name}：课程并不压在推导上`).toBe(true);
+        if (has(PRAISE)) praiseTotal++;
+        if (has(STARVED) || has(SWAMPED)) appetiteCostTotal++;
+      }
+    }
+    // 三句都得真的被说过，否则上面的循环只是在验一句没人说的话
+    expect(praiseTotal, '正面那句一次都没说出口').toBeGreaterThan(0);
+    expect(appetiteCostTotal, '负面那两句一次都没说出口').toBeGreaterThan(0);
+  });
+
   it('置信度文案不许声称做过多次观测交叉验证 —— 题库结构上就没做', () => {
     const a = assess(neutralAnswers());
     expect(a.diagnostics.thin.length, '这套题库里必然存在单次观测的维度').toBeGreaterThan(0);
