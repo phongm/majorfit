@@ -1,0 +1,44 @@
+name: 专业画像有错
+description: 某个专业的课程负载、深造依赖度、就业出口、负面清单判断不准
+title: '[数据] '
+labels: ['data']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这是这个项目最有价值的 issue 类型。67 条画像全是人工判断，判断就会错。
+
+        填之前先看一眼条目里已有的 `todo` 字段——如果我要修的和它写的一样，说明我已经知道，但仍欢迎补充依据。
+  - type: input
+    id: major
+    attributes:
+      label: 专业
+      description: 专业名称 + 六位代码，例如「网络空间安全 080911TK」
+      placeholder: '080911TK 网络空间安全'
+    validations:
+      required: true
+  - type: textarea
+    id: field
+    attributes:
+      label: 哪个字段错了
+      description: 负载向量（math/programming/memorization…）、undergradJobFit、postgradNecessity、civilServiceFit、marketTrend、honestDrawbacks、careerPaths、subjectRequirements、healthRestrictions 等
+      placeholder: |
+        postgradNecessity 给了 0.4，太低。这个方向本科出去基本只能做测试和实施。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 依据
+      description: 这条决定推荐结果，所以我要能查证的东西，不接受「我感觉」。培养方案页、院系官网、你们省的招生目录、你自己的就业数据都可以
+      placeholder: |
+        XX 大学 2025 级培养方案：专业核心课 8 门里 6 门需考研；
+        或：同院系近三届毕业生 62% 继续深造
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 补充
+      description: 这个判断是否只在特定院校层次成立？（双非和 985 的出口差别在这个项目里是真实变量，但现在没建模）
+      render: text

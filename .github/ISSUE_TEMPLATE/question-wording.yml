@@ -1,0 +1,57 @@
+name: 题目问不对
+description: 某道题会引导人给出与真实行为不符的答案，或选项覆盖不全
+title: '[题库] '
+labels: ['assessment']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这套题库的设计约束是：**只问做过什么，不问觉得自己是什么**。
+        每题都应该有一个能拿出证据的事实作选项，而不是自评特质。
+        如果你觉得某题违反了这条，这是本模板最适合的 issue。
+  - type: input
+    id: item
+    attributes:
+      label: 题号或题干
+      description: 题干原文，或者 `src/assessment/items.ts` 里的 item id（例如 `f_subjects`）
+      placeholder: '你有连续两周以上没被人催着自己做完一件事的经历吗'
+    validations:
+      required: true
+  - type: dropdown
+    id: problem
+    attributes:
+      label: 问题类型
+      options:
+        - 会引导人给出体面的假答案（社会期许偏差）
+        - 选项覆盖不全，我的真实情况无处可选
+        - 题干有歧义，两种读法会得到相反的答案
+        - 出现了自评特质而不是行为证据
+        - 用了专业术语或政策词，高中生读不懂
+        - 这道题重复测量了已有题测过的东西
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: 怎么错的
+      description: 谁会答错？答错之后评分向量往哪边偏？
+      placeholder: |
+        高中全程被安排学习时间的人，对「自己做完一件事」没有参照，会选「做过」；
+        这条 delta 给 grit 加分，正好把最不独立的人推到最需自主安排的专业上。
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: 建议怎么改
+      description: 给出你认为更老实的问法或选项
+      placeholder: |
+        改成可核对的具体事：「暑假里有没有一件事，是你自己定目标、自己做完、没人检查的？」
+        并把「想不起来」做成一个会计分的选项，而不是让人非选不可。
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 依据
+      description: 身边的样本、你自己的经历、文献都行。没有依据的偏好我会当作普通意见处理
+      render: text

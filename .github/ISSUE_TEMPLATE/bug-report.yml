@@ -1,0 +1,47 @@
+name: 程序有问题
+description: 界面、计算、部署上的缺陷
+title: '[bug] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        推荐结果「不准」不算 bug——那是数据判断，走「专业画像有错」。
+        这里收的是：算错了、崩了、和它自己声明的行为不一致。
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象
+      description: 你做了什么，看到了什么， expected 是什么
+      placeholder: |
+        色觉异常选「无色盲」后，仍然有 3 个限制色觉的专业出现在推荐里。
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现路径
+      description: 关键几步答题选择即可，不用贴全部答案（也不会有人收集你的答题内容）
+      placeholder: |
+        1. 选科：物理 + 化学
+        2. 色觉：无色盲
+        3. 结果页前 10 个里包含 071003 生物科学
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: 跑在哪
+      options:
+        - 线上站点
+        - 本地 npm run dev
+        - 本地 npm run preview
+        - 自架部署（Nginx + Node）
+        - GitHub Pages + Cloudflare Worker
+        - 不确定
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: 浏览器与版本、Node 版本（`node -v`）。Node 低于 23.6 跑不了统计服务，因为类型剥离要那之后才有
+      placeholder: 'Chrome 141 / Node v22.23.1'

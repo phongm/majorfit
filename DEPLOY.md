@@ -3,7 +3,7 @@
 本项目提供两种部署方式：
 
 - **方案一：自有服务器**（下文一至九节）—— Nginx + Node.js，适合有备案域名、需要完全控制数据的场景
-- **方案二：GitHub Pages + Cloudflare Worker**（文末新增）—— 零服务器成本，适合快速上线、日活几千量级
+- **方案二：Cloudflare Pages + Cloudflare Worker**（文末新增）—— 零服务器成本，适合快速上线、日活几千量级
 
 ---
 
@@ -134,23 +134,23 @@ curl -s "https://你的域名/api/stats?token=你的口令&days=14"
 
 ---
 
-## 方案二：GitHub Pages + Cloudflare Worker（零服务器）
+## 方案二：Cloudflare Pages + Cloudflare Worker（零服务器）
 
-完全免费（在额度内），无需维护服务器。
+完全免费（在额度内），无需维护服务器。**本仓库线上用的就是这一套。**
 
 ```
-GitHub Pages (静态站点)  ──POST https://worker/api/events──►  Cloudflare Worker
-         │                                                          │
-         └──GET https://worker/api/stats?token=…───────────────────┘
-                                                                  ▼
-                                                         Cloudflare D1 (SQLite)
+Cloudflare Pages (静态站点)  ──POST https://worker/api/events──►  Cloudflare Worker
+         │                                                              │
+         └──GET https://worker/api/stats?token=…────────────────────────┘
+                                                                        ▼
+                                                               Cloudflare D1 (SQLite)
 ```
 
 ### 架构说明
 
 | 组件 | 服务 | 免费额度 |
 |------|------|----------|
-| 前端托管 | GitHub Pages | 无限（公开仓库） |
+| 前端托管 | Cloudflare Pages | 无限带宽、500 次构建/月 |
 | 统计服务 | Cloudflare Workers | 10 万次请求/天 |
 | 数据存储 | Cloudflare D1 (SQLite) | 5GB 存储、50 亿行读取/天 |
 
@@ -232,17 +232,41 @@ window.__MAJORFIT_CONFIG__ = {
 };
 ```
 
-### 步骤五：启用 GitHub Pages
+### 步骤五：连接 Cloudflare Pages
 
-1. 进入仓库 Settings → Pages
-2. Source 选择 **GitHub Actions**
-3. 如果使用 GitHub 默认域名（`username.github.io/majorfit`），需要在仓库 Settings → Secrets and variables → Actions → Variables 中添加：
-   - `VITE_BASE_PATH` = `/majorfit/`（替换为你的仓库名）
-4. 如果使用自定义域名，保持 `VITE_BASE_PATH` = `/` 或不设置
+1. Cloudflare 控制台 → Workers & Pages → Create application → **Pages** → Connect to Git，选本仓库
+2. Build settings：
 
-### 步骤六：配置 GitHub Secrets（可选：自动部署 Worker）
+| 项 | 值 |
+|---|---|
+| Production branch | `main` |
+| Build command | `npm run build`（用 pnpm 就写 `pnpm run build`） |
+| Build output directory | `dist` |
 
-如果需要 CI 自动部署 Worker，在仓库 Settings → Secrets → Actions 中添加：
+3. 保存后首次构建，之后每次推 main 自动重新构建。**这一步不经过 GitHub Actions**，仓库里没有发布 workflow。
+
+包管理器由 lockfile 自动识别，仓库里同时有 `package-lock.json` 和 `pnpm-lock.yaml` 时 Pages 会选 **pnpm**。
+`pnpm-lock.yaml` 是 `6167e50` 迁移到 Cloudflare Pages 时特意加进来的，别顺手删——删掉构建管线会静默切到 npm，
+线上和本地装出的依赖树就不再是同一套了。
+
+base path 规则（`vite.config.ts` 读 `VITE_BASE_PATH`，缺省 `/`）：
+
+| 访问方式 | 需要设置 |
+|---|---|
+| 独立域名或子域名根路径（`majorfit.你的域名.com`） | 不设置，保持 `/` |
+| 挂在某条路径下（`你的域名.com/majorfit`） | 构建时 `VITE_BASE_PATH=/majorfit/` |
+
+环境变量在 Pages 项目的 Settings → Environment variables 里加，不要在 GitHub 那边配。
+
+> **线上现状**：`public/config.js` 的 `statsEndpoint` 是空值，而 `worker/wrangler.toml` 里 `database_id` 还是注释掉的占位——
+> Worker 从没部署过。空值意味着前端上报走同源 `/api/events`，Pages 不执行任何后端，
+> 所以**统计目前一个都收不到**。前端功能不受影响，推荐全部在浏览器本地算完。
+> 要收数据就回到步骤一到步骤三把 D1 和 Worker 建起来，再把 URL 填进 `public/config.js` 重新构建。
+
+### 步骤六：配置 GitHub Secrets（可选：用 Actions 部署 Worker）
+
+仓库里没有发布 workflow（`6167e50` 删掉了原先推 `gh-pages` 的 `deploy.yml`）。
+如果想自己补一条自动部署 Worker 的 workflow，需要这些：
 
 | Secret | 说明 |
 |--------|------|
@@ -254,14 +278,16 @@ window.__MAJORFIT_CONFIG__ = {
 
 推送代码到 main 分支后：
 
-1. **前端**：GitHub Actions 自动构建并部署到 GitHub Pages
-2. **Worker**：如果 `worker/` 目录有变更，自动部署到 Cloudflare
+1. **前端**：Cloudflare Pages 检测到 push 后自动构建部署（平台侧触发）
+2. **Worker**：不会自动部署，改完在 `worker/` 目录跑 `wrangler deploy`
+3. **GitHub Actions**：只跑 typecheck、测试、构建（`.github/workflows/ci.yml`），不发布任何东西
 
-手动触发 Worker 部署：Actions → Deploy Cloudflare Worker → Run workflow
+> `gh-pages` 分支还留在远端，带着 GitHub Pages 时代的 `CNAME` 文件。它已经不是发布路径，可以删。
 
 ### 自定义域名（可选）
 
-**GitHub Pages**：在仓库 Settings → Pages → Custom domain 填入你的域名，然后按提示配置 DNS。
+**Pages**：Pages 项目 → Custom domains → 填 `majorfit.你的域名.com`。域名托管在 Cloudflare 的，按提示加 CNAME 指向 `<项目>.pages.dev`；
+域名不在 Cloudflare 也能用，在自己的 DNS 建同样的 CNAME，回 Pages 点验证。
 
 **Cloudflare Worker**：在 Cloudflare 控制台 → Workers → 你的 Worker → Triggers → Add，绑定自定义路由或域名。
 
@@ -271,8 +297,8 @@ window.__MAJORFIT_CONFIG__ = {
 |---|---|---|
 | 成本 | VPS ~30-50 元/月 | 免费（额度内） |
 | 运维 | 需要管理服务器、Nginx、systemd | 零运维 |
-| 域名备案 | 需要（大陆服务） | 不需要（GitHub/Cloudflare 境外） |
+| 域名备案 | 需要（大陆服务） | 不需要（境外节点） |
 | 数据控制 | 完全控制，日志在本地 | 数据在 Cloudflare |
-| 访问速度 | 取决于服务器位置 | GitHub Pages 在境外，大陆访问可能慢 |
+| 访问速度 | 取决于服务器位置 | 全球 CDN，大陆速度看节点与网络 |
 | 扩展性 | 受限于单机配置 | 自动扩展 |
 | 适用场景 | 面向大陆用户、需要备案 | 快速上线、海外用户、内部使用 |
